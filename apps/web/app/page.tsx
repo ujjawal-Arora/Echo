@@ -1,9 +1,10 @@
+"use client"
 import Sidebar from './Components/Sidebar'
-// import { useEffect, useState } from 'react'
-// import { io } from 'socket.io-client';
+import { useEffect, } from 'react'
+import { io } from 'socket.io-client';
 import MainPart from "./Components/MainPart"
 export default function Home() {
-  return(
+
   // const [online, setOnline] = useState(false);
   // const [socket, setsocket] = useState(null);
   // const [messages, setMessage] = useState([]);
@@ -19,13 +20,13 @@ export default function Home() {
   //     setsendmessgae("");
   //   }
   // }
-  // useEffect(() => {
-  //   const newsocket = io("http://localhost:3000");
+  useEffect(() => {
+    const newsocket = io("http://localhost:5173");
   //   setsocket(newsocket);
-  //   newsocket.on("connect", () => {
-  //     console.log("Connected:", newsocket.id);
-  //     setOnline(true);
-  //   });
+    newsocket.on("connect", () => {
+      console.log("Connected:", newsocket.id);
+      // setOnline(true);     
+    });
 
   //   newsocket.on("new message", (data) => {
   //     console.log("newmessage", data)
@@ -35,8 +36,8 @@ export default function Home() {
   //     newsocket.disconnect();
   //     setOnline(false);
   //   };
-  // }, []);
-
+  }, []);
+  return(
     <div className="flex overflow-hidden">
       <Sidebar/>
       <MainPart />
