@@ -10,18 +10,15 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://neondb_owner:7KtQiuSsmLG0@ep-nameless-bird-a1ws43n4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-}
-// model User {
-//   id    String     @id @default(uuid())
-//   username String  @unique
-//   message  String?
-// }
+   url  	 = env("DATABASE_URL")
+  }
 
 model User {
   id            String       @id @default(uuid()) 
   username      String       @unique 
-  password      String       
+  password      String  
+  email         String       @unique 
+  bio           String?     
   gender        Gender      
   profilePic    String?    
   createdAt     DateTime     @default(now()) 
@@ -36,7 +33,7 @@ model Conversation {
   messages      Message[]    // One-to-many relationship with Message
   participants  ConversationParticipant[] // Many-to-many relationship with User via a join table
 }
-model ConversationParticipant {
+model ConversationParticipant {  
   id             String      @id @default(uuid())
   userId         String     
   user           User        @relation(fields: [userId], references: [id]) 
