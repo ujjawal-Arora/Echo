@@ -2,20 +2,21 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "commonjs",
   "scripts": {
-    "build": "npx tsup src/**/*.ts --out-dir dist",
-    "dev": "npx tsup src/**/*.ts --out-dir dist && node dist/index.js"
+    "build": "npx esbuild ./src/index.ts --bundle --platform=node --outfile=dist/index.js",
+    "start": "node dist/index.js",
+    "dev": "npm run build && npm run start"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@repo/database":"*",
+    "@repo/database": "*",
     "@types/axios": "^0.9.36",
     "@types/express": "^5.0.0",
     "axios": "^1.7.7",
+    "esbuild": "^0.24.0",
     "express": "^4.21.0",
     "socket.io": "^4.8.0",
     "tsup": "^8.3.0",

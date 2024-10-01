@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { client } from '@repo/database/client';
+import { client } from '@repo/database/client'
 import { signUpvalidations, signInvalidations } from '../validations/validations';
 
 const router = express.Router();
@@ -54,14 +54,23 @@ router.post("/signin", async (req: Request, res: any) => {
 })
 
 router.post("/addconvp",async(req:any,res:any)=>{
+    const {conversationId,senderId,body}=req.body;
+    console.log(conversationId,senderId,body);
     try{
-        await client.message.create({
+        const userExists = await client.user.findUnique({
+            where: { id: senderId }
+        });
+        if (!userExists) {
+            return res.status(400).json({ message: "Invalid senderId" });
+        }
+
+        const message = await client.message.create({
             data: {
-                conversationId:'ea4a7787-de65-490f-adbd-5a7ab1c5a6a9',
-                senderId:'f792550a-95a1-4ca3-92d6-7a8ba77369ee',
-                body:'HI world and Fuck World'
+                conversationId,
+                senderId,
+                body
             },
-          });
+        });
           return res.status(201).json({"msg":"Success"});
     }
     catch(error){

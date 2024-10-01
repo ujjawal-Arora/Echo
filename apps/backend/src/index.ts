@@ -18,9 +18,8 @@ io.on('connection', (socket) => {
     console.log(socket.id);
     socket.on("send message", async(data) => {
         const { conversationId, senderId, body } = data;
-
         try {
-            const response = await axios.post('http://localhost:5173/api/addconv', {
+            const response = await axios.post('http://localhost:5173/api/addconvp', {
                 conversationId,
                 senderId,
                 body
