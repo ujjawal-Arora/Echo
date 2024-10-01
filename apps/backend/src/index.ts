@@ -1,56 +1,44 @@
-// import { Server } from "socket.io";
-// import { createServer } from 'http';
-// import  Express, { Request, Response }  from "express";
-// import { client } from '@repo/db/client';
-// const server = createServer();
-// const app = Express();
-// app.use(Express.json());
-// // app.post("/",async(req:Request,res:Response)=>{
-// //     console.log("Enneted")
-// //     const {username, message} = req.body;
-// //     await client.user.create({
-// //         data: {
-// //             username,
-// //             message
-// //         }
-// //     })
-// //     res.send("Message sent successfully")
-// // })
-// app.listen(5174,()=>{
-//     console.log("Server started on port 5174");
+import { Server } from "socket.io";
+import { createServer } from 'http';
+import Express, { Request, Response } from "express";
+import router from "./routes/userroutes";
+import axios from 'axios';
+const app = Express();
+const server = createServer(app);
+app.use(Express.json());
+app.use("/api", router);
 
-// })
-// // server.listen(5173, () => {
-// //     console.log("Server started on port 5173");
-// // });
-// // const io = new Server(server, {
-// //     cors: {
-// //         origin: "*",
-// //     },
-// // });
-// // let arr = {};
-// // io.on('connection', (socket) => {
-// //     console.log(socket.id);
-// //     socket.on("send message", (data) => {
-// //         socket.broadcast.emit("new message", (data))
-// //     })
-// //     socket.on("disconnect", () => {
-// //         console.log(socket.id);
-// //     })
-// // })
-import express from 'express';
-import userRoutes from './routes/userroutes'; 
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+    },
+});
+let arr = {};
+io.on('connection', (socket) => {
+    console.log(socket.id);
+    socket.on("send message", async(data) => {
+        const { conversationId, senderId, body } = data;
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(express.json());
-
-// Use user routes
-app.use('/api', userRoutes);
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+        try {
+            const response = await axios.post('http://localhost:5173/api/addconv', {
+                conversationId,
+                senderId,
+                body
+            });
+            socket.broadcast.emit("new message", {
+                conversationId,
+                senderId,
+                body
+            });
+        } catch (error) {
+            console.error('Error adding conversation:', error);
+            socket.emit("error", { message: "Failed to add conversation" });
+        }
+    })
+    socket.on("disconnect", () => {
+        console.log(socket.id);
+    })
+})
+server.listen(5173, () => {
+    console.log("Server started on port 5173");
 });

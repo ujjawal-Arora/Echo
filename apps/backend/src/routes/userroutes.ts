@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
-import { client } from '@repo/db/client';
+import { client } from '@repo/database/client';
 import { signUpvalidations, signInvalidations } from '../validations/validations';
-import { isAsync } from 'zod';
 
 const router = express.Router();
 
