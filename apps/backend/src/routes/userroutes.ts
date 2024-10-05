@@ -53,6 +53,87 @@ router.post("/signin", async (req: Request, res: any) => {
     }
 })
 
+router.get('/getallconversations/:id', async (req: express.Request, res: any) => {
+    try {
+        // Fetch conversations along with their participants for the given user ID
+        const conversations = await client.conversation.findMany({
+            where: {
+                participants: {
+                    some: {
+                        userId: req.params.id // Ensure we're getting conversations for this user
+                    }
+                }
+            },
+            include: {
+                participants: {
+                    select: {
+                        userId: true,
+                        conversationId:true
+                    }
+                }
+            }
+        });
+
+        // Check if there are any conversations found
+        if (!conversations.length) {
+            return res.status(404).json({ message: "No conversations found for this user" });
+        }
+
+        const userConvoMap:any = {};
+
+        conversations.forEach(conversation => {
+            conversation.participants.forEach(participant => {
+                if (participant.userId !== req.params.id) { // Exclude current user
+                    if (!userConvoMap[participant.userId]) {
+                        userConvoMap[participant.userId] = [];
+                    }
+                    userConvoMap[participant.userId].push(participant.conversationId);
+                }
+            });
+        });
+
+        // Get unique user IDs
+        const uniqueUserIds = Object.keys(userConvoMap);
+
+        // Fetch unique users based on the user IDs
+        const uniqueUsers = await client.user.findMany({
+            where: {
+                id: {
+                    in: uniqueUserIds
+                }
+            }
+        });
+
+        // Create the response object that includes user details and their associated conversation IDs
+        const response = uniqueUsers.map(user => ({
+            ...user,
+            conversationIds: userConvoMap[user.id] || [] // Add conversation IDs for each user
+        }));
+
+        return res.json(response);
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        return res.status(500).json({ message: "Error fetching user data" });
+    }
+});
+router.get('/getmessages/:id', async (req: Request, res: any) => {
+    try {
+        const messages = await client.message.findMany({
+            where: {
+                conversationId: req.params.id, 
+            }
+        });
+
+        if (messages.length === 0) {
+            return res.status(404).json({ message: "No messages found for this conversation" });
+        }
+
+        return res.json(messages);
+    } catch (error) {
+        console.error(error); 
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 router.post("/addconvp",async(req:any,res:any)=>{
     const {conversationId,senderId,body}=req.body;
     console.log(conversationId,senderId,body);

@@ -5,10 +5,13 @@ import { IoSettingsSharp } from "react-icons/io5";
 import RightClick from "./ChatRightClickContext";
 import { BsEmojiHeartEyesFill } from "react-icons/bs";
 import { IoMdSend } from "react-icons/io";
-import { useState } from "react";
-export default function MainPart() {
+import { useState ,useEffect} from "react";
+export default function MainPart({conversations}:{conversations:any}) {
+    useEffect(()=>{
+        // console.log(conversations.data[0].body)
+    },[conversations])
     const [rightClickMenu, setRightClickMenu] = useState({ visible: false, x: 0, y: 0 });
-
+    // onContextMenu={handleRightClick} // use it for right click in future 
     const handleRightClick = (e:any) => {
         e.preventDefault();
         console.log("Right Click");
@@ -19,7 +22,7 @@ export default function MainPart() {
         });
     };
     return (
-        <div className="w-[70%] font-mono relative" onContextMenu={handleRightClick}>
+        <div className="w-[70%] font-mono relative">
             {rightClickMenu.visible && (
                 <RightClick x={rightClickMenu.x} y={rightClickMenu.y} />
             )}
@@ -27,12 +30,12 @@ export default function MainPart() {
                 <div className=" flex gap-4">
                     <Avator name={"Aditya Verma"} width={60} height={60} keys={3} isrequired={false} imageUrl={null} />
                     <div className="flex flex-col justify-center">
-                        <h1 className="font-bold text-xl">Aditya Verma</h1>
+                        <h1 className="font-bold text-lg">Aditya Verma</h1>
                         <div className="flex gap-1">
                             <div className="flex flex-col justify-center">
                                 <h2 className="h-3 w-3 bg-[#DB1A5A] rounded-full"></h2>
                             </div>
-                            <h1 className="text-slate-600">Active</h1>
+                            <h1 className="text-slate-600 text-sm">Active</h1>
                         </div>
                     </div>
                 </div>
@@ -44,7 +47,16 @@ export default function MainPart() {
                 </div>
             </div>
             {/* chatting area */}
-            <div></div>
+            <div>
+            {conversations && conversations.data.map((d:any)=>{
+                console.log(d.body);
+                return ( 
+                    <div key={d.id} className="text-black font-bold text-2xl ">
+                        {d.body}
+                    </div>
+                );
+            })}
+            </div>
             {/* Message  send */}
             <div className="absolute bottom-0 w-full">
                 <div className="flex bg-gray-100 p-3 gap-4">

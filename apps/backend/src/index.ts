@@ -3,8 +3,12 @@ import { createServer } from 'http';
 import Express, { Request, Response } from "express";
 import router from "./routes/userroutes";
 import axios from 'axios';
+import cors from 'cors';
 const app = Express();
 const server = createServer(app);
+app.use(cors({
+    origin:'*'
+}));
 app.use(Express.json());
 app.use("/api", router);
 

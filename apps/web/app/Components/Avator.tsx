@@ -21,7 +21,6 @@ const Avator = ({name, imageUrl, width, height, keys, isrequired}:{name:string,i
     "bg-cyan-400",
     "bg-sky-400",
   ]
-
   return (
     <div className='relative' >
       <div className={`text-slate-800 overflow-hidden rounded-full font-bold relative`} style={{ width: width + "px", height: height + "px" }}>
