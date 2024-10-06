@@ -1,12 +1,15 @@
-
+"use client"
 import { ReactNode } from 'react';
 import Avator from './Avator';
 import  axios from 'axios';
-function SearchCard({ avatar, name, message, date ,count,keys,conversationId,setConversation}:{avatar:string|null,name:string,message:string,date:ReactNode,count:number,keys:number,conversationId:string,setConversation:any}) {
+import {useDispatch} from '@repo/redux/store';
+import { addtomainarea } from '@repo/redux/slices';
+function SearchCard({ avatar, name, message, date ,count,keys,conversationId}:{avatar:string|null,name:string,message:string,date:ReactNode,count:number,keys:number,conversationId:string}) {
+  const dispatch=useDispatch();
   const handleclick=()=>{
     const fetchmessages=async()=>{
       const getmessages=await axios.get(`http://localhost:5173/api/getmessages/${conversationId}`);
-      setConversation(getmessages);
+      dispatch(addtomainarea(getmessages))
     }
     fetchmessages();
   }

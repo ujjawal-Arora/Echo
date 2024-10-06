@@ -11,7 +11,6 @@ export default function Home() {
   const [sendmessage, setsendmessgae] = useState<string>();
   const [conversationId, setconvid] = useState<string>();
   const [senderId, setsenderId] = useState<string>();
-  const [conversations,setConversation]=useState<any>();
   const handlesubmit = () => {
     console.log("client", sendmessage);
     if (!socket) {
@@ -43,8 +42,8 @@ export default function Home() {
   }, []);
   return(
     <div className="flex overflow-hidden">
-      <Sidebar setConversation={setConversation}/>
-      <MainPart conversations={conversations}/>
+      <Sidebar />
+      <MainPart/>
     </div>
   );
 }

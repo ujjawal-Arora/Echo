@@ -3,7 +3,7 @@ import SearchBox from './SearchBox';
 import SearchCard from './SearchCard';
 import { useEffect,useState } from 'react';
 import  axios from 'axios';
-function Sidebar({setConversation}:{setConversation:any}) {
+function Sidebar() {
   const [data,setData]=useState<any>();
   useEffect(()=>{
     console.log("Entered");
@@ -37,7 +37,6 @@ function Sidebar({setConversation}:{setConversation:any}) {
             name={d.username} // Assuming username property
             date={"Sep 15"} // Assuming date property
             conversationId={d.conversationIds[0]}
-            setConversation={setConversation}
         />
     ))}
         {/* {data && data.map((d,key)=>{

@@ -5,14 +5,13 @@ import { IoSettingsSharp } from "react-icons/io5";
 import RightClick from "./ChatRightClickContext";
 import { BsEmojiHeartEyesFill } from "react-icons/bs";
 import { IoMdSend } from "react-icons/io";
-import { useState ,useEffect} from "react";
-export default function MainPart({conversations}:{conversations:any}) {
-    useEffect(()=>{
-        // console.log(conversations.data[0].body)
-    },[conversations])
+import { useState} from "react";
+import { useSelector } from "@repo/redux/store";
+export default function MainPart() {
+    const state=useSelector();
     const [rightClickMenu, setRightClickMenu] = useState({ visible: false, x: 0, y: 0 });
     // onContextMenu={handleRightClick} // use it for right click in future 
-    const handleRightClick = (e:any) => {
+    const handleRightClick = (e: any) => {
         e.preventDefault();
         console.log("Right Click");
         setRightClickMenu({
@@ -48,14 +47,14 @@ export default function MainPart({conversations}:{conversations:any}) {
             </div>
             {/* chatting area */}
             <div>
-            {conversations && conversations.data.map((d:any)=>{
-                console.log(d.body);
-                return ( 
-                    <div key={d.id} className="text-black font-bold text-2xl ">
-                        {d.body}
-                    </div>
-                );
-            })}
+                {state && state.data.map((d: any) => {
+                    console.log(d.body);
+                    return (
+                        <div key={d.id} className="text-black font-bold text-2xl ">
+                            {d.body}
+                        </div>
+                    );
+                })}
             </div>
             {/* Message  send */}
             <div className="absolute bottom-0 w-full">
@@ -64,9 +63,9 @@ export default function MainPart({conversations}:{conversations:any}) {
                         <BsEmojiHeartEyesFill className="text-[#DB1A5A] text-2xl" />
                     </div>
                     <input type="text" placeholder="Type a message..." className="w-full h-10 p-2 rounded-lg  outline-none bg-transparent text-black placeholder:text-black placeholder:font-bold font-semibold" />
-                   <div className="flex flex-col justify-center mr-2">
-                   <IoMdSend className="text-[#ec306f] hover:text-[#DB1A5A] text-3xl cursor-pointer"/>
-                   </div>
+                    <div className="flex flex-col justify-center mr-2">
+                        <IoMdSend className="text-[#ec306f] hover:text-[#DB1A5A] text-3xl cursor-pointer" />
+                    </div>
                 </div>
             </div>
         </div>
