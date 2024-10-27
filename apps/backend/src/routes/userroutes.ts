@@ -1,10 +1,14 @@
 import express, { Request, Response } from 'express';
 import { client } from '@repo/database/client'
-import { signUpvalidations, signInvalidations } from '../validations/validations';
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET||"ujjawal";
+
+
+import { signUpvalidations, signInvalidations,userDetailsValidation } from '../validations/validations';
 
 const router = express.Router();
 
-// User signup route
 router.post("/signup", async (req: Request, res: any) => {
     const validation = signUpvalidations.safeParse(req.body);
 
@@ -12,7 +16,7 @@ router.post("/signup", async (req: Request, res: any) => {
         return res.status(400).json({ message: "Failed to sign up", errors: validation.error });
     }
 
-    const { username, password, email, bio, gender, profilePic } = validation.data;
+    const { username, password, email } = validation.data;
 
     try {
         const newUser = await client.user.create({
@@ -20,9 +24,7 @@ router.post("/signup", async (req: Request, res: any) => {
                 username,
                 password,
                 email,
-                bio,
-                gender,
-                profilePic,
+               
             },
         });
 
@@ -33,34 +35,91 @@ router.post("/signup", async (req: Request, res: any) => {
     }
 });
 router.post("/signin", async (req: Request, res: any) => {
+  
+    console.log("password");
+
     const validations = signInvalidations.safeParse(req.body);
+    
     if (!validations.success) {
-        return res.status(400).json({ message: "Failed to sign in", errors: validations.error })
+        return res.status(400).json({ message: "Failed to sign in", errors: validations.error });
     }
+
+    const { email, password } = validations.data;
+
     try {
         const user = await client.user.findUnique({
             where: {
-                username: validations.data.username,
-                password: validations.data.password
+                email: email,
+                password: password
             }
-        })
+        });
+
         if (!user) {
-            return res.status(401).json({ message: "Invalid credentials" })
+            return res.status(401).json({ message: "Invalid credentials" });
         }
-        return res.json({ message: "Logged in successfully", user })
+
+        const token = jwt.sign(
+            {
+                id: user.id,        
+                username: user.email, 
+            },
+            JWT_SECRET,
+            { expiresIn: "1h" }  
+        );
+
+        return res.json({
+            message: "Logged in successfully",
+            token,   
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email
+            }
+        });
     } catch (error) {
-        return res.status(401).json({ message: "Something went wrong", error });
+        console.error("Error signing in:", error);
+        return res.status(500).json({ message: "Something went wrong", error });
     }
 })
 
+  
+  router.post('/userdetails', async (req: Request, res: any) => {
+    const { email } = req.body; 
+    const validation = userDetailsValidation.safeParse(req.body);
+  console.log(email,validation)
+    if (!validation.success) {
+      return res.status(400).json({ message: "Validation failed", errors: validation.error });
+    }
+  
+    const { bio, gender, interests, profilePic } = validation.data;
+  
+    try {
+      const updatedUser = await client.user.update({
+        where: { email },
+        data: {
+          bio,
+          gender,
+          interests,
+          profilePic,
+        },
+      });
+  
+      return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
+    } catch (error) {
+      console.error("Error updating user details:", error);
+      return res.status(500).json({ message: "Error updating user details" });
+    }
+  });
+  
+
+
 router.get('/getallconversations/:id', async (req: express.Request, res: any) => {
     try {
-        // Fetch conversations along with their participants for the given user ID
         const conversations = await client.conversation.findMany({
             where: {
                 participants: {
                     some: {
-                        userId: req.params.id // Ensure we're getting conversations for this user
+                        userId: req.params.id 
                     }
                 }
             },
@@ -74,7 +133,6 @@ router.get('/getallconversations/:id', async (req: express.Request, res: any) =>
             }
         });
 
-        // Check if there are any conversations found
         if (!conversations.length) {
             return res.status(404).json({ message: "No conversations found for this user" });
         }
@@ -92,10 +150,8 @@ router.get('/getallconversations/:id', async (req: express.Request, res: any) =>
             });
         });
 
-        // Get unique user IDs
         const uniqueUserIds = Object.keys(userConvoMap);
 
-        // Fetch unique users based on the user IDs
         const uniqueUsers = await client.user.findMany({
             where: {
                 id: {
@@ -104,10 +160,9 @@ router.get('/getallconversations/:id', async (req: express.Request, res: any) =>
             }
         });
 
-        // Create the response object that includes user details and their associated conversation IDs
         const response = uniqueUsers.map(user => ({
             ...user,
-            conversationIds: userConvoMap[user.id] || [] // Add conversation IDs for each user
+            conversationIds: userConvoMap[user.id] || [] 
         }));
 
         return res.json(response);

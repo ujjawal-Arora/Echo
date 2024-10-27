@@ -10,48 +10,51 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-   url  	 = env("DATABASE_URL")
-  }
+  url      = env("DATABASE_URL")
+}
 
 model User {
-  id            String       @id @default(uuid()) 
-  username      String       @unique 
-  password      String  
-  email         String       @unique 
-  bio           String?     
-  gender        Gender      
-  profilePic    String?    
-  createdAt     DateTime     @default(now()) 
-  updatedAt     DateTime     @updatedAt 
-  messages      Message[]    // One-to-many relationship with Message
-  conversations ConversationParticipant[] // Many-to-many relationship with Conversation through ConversationParticipant
+  id                 String       @id @default(uuid()) 
+  username           String       @unique 
+  password           String  
+  email              String       @unique 
+  bio                String?     
+  gender             Gender?      
+  profilePic         String?    
+  interests          String[]   // Added interests field as an array of strings
+  createdAt          DateTime     @default(now()) 
+  updatedAt          DateTime     @updatedAt 
+  messages           Message[]    // One-to-many relationship with Message
+  conversations      ConversationParticipant[] // Many-to-many relationship with Conversation through ConversationParticipant
 }
+
 model Conversation {
-  id            String       @id @default(uuid()) 
-  createdAt     DateTime     @default(now()) 
-  updatedAt     DateTime     @updatedAt 
-  messages      Message[]    // One-to-many relationship with Message
-  participants  ConversationParticipant[] // Many-to-many relationship with User via a join table
+  id                 String       @id @default(uuid()) 
+  createdAt          DateTime     @default(now()) 
+  updatedAt          DateTime     @updatedAt 
+  messages           Message[]    // One-to-many relationship with Message
+  participants       ConversationParticipant[] // Many-to-many relationship with User via a join table
 }
+
 model ConversationParticipant {  
-  id             String      @id @default(uuid())
-  userId         String     
-  user           User        @relation(fields: [userId], references: [id]) 
-  conversationId String      // Foreign key to Conversation
-  conversation   Conversation @relation(fields: [conversationId], references: [id]) // Relationship to Conversation
+  id                 String      @id @default(uuid())
+  userId             String     
+  user               User        @relation(fields: [userId], references: [id]) 
+  conversationId     String      // Foreign key to Conversation
+  conversation       Conversation @relation(fields: [conversationId], references: [id]) // Relationship to Conversation
 
   @@unique([userId, conversationId]) // A user can only participate in a conversation once
 }
 
 model Message {
-  id            String       @id @default(uuid())
-  conversationId String      
-  conversation   Conversation @relation(fields: [conversationId], references: [id]) 
-  senderId      String       // ID of the sender (user)
-  sender        User         @relation(fields: [senderId], references: [id]) // Relationship to User
-  body          String       // Message content
-  createdAt     DateTime     @default(now()) // Timestamp when the message was created
-  updatedAt     DateTime     @updatedAt // Auto-updates when the message is modified
+  id                 String       @id @default(uuid())
+  conversationId     String      
+  conversation       Conversation @relation(fields: [conversationId], references: [id]) 
+  senderId          String       // ID of the sender (user)
+  sender            User         @relation(fields: [senderId], references: [id]) // Relationship to User
+  body              String       // Message content
+  createdAt         DateTime     @default(now()) // Timestamp when the message was created
+  updatedAt         DateTime     @updatedAt // Auto-updates when the message is modified
 }
 
 enum Gender {
