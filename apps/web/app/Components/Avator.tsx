@@ -50,7 +50,7 @@ const Avator = ({name, imageUrl, width, height, keys, isrequired}:{name:string,i
       </div>
       {
         isOnline && isrequired && (
-          <div className='bg-[#DB1A5A] absolute z-10 right-1 bottom-1 rounded-full h-3 w-3'></div>
+          <div className='bg-[#DB1A5A] absolute z-10 right-1 bottom-1 rounded-full h-2 w-2'></div>
         )
       }
     </div>

@@ -152,7 +152,7 @@ router.post("/addconvp",async(req:any,res:any)=>{
                 body
             },
         });
-          return res.status(201).json({"msg":"Success"});
+          return res.status(201).json({"msg":"Success","message":message});
     }
     catch(error){
         return res.status(error).json({ message:error})

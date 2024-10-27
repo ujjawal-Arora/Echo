@@ -16,6 +16,8 @@
   "exports":{
     "./store": "./store/store.ts",
     "./actions": "./store/store.ts",
-    "./slices":"./slices/chatslice.ts"
+    "./chatslices":"./slices/chatslice.ts",
+    "./themeslices":"./slices/ThemeSlice.ts"
+
   }
 }
