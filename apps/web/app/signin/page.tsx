@@ -19,14 +19,15 @@ const SignIn = () => {
         password,
       });
   
-      const { token }:any = response.data;
+      const { token ,user}:any = response.data;
   
       if (token) {
         localStorage.setItem("token", token);
+        localStorage.setItem("id",user.id)
         localStorage.setItem("email", email);
         console.log("Token stored in localStorage");
   
-        router.push("/userdetails");
+        // router.push("/userdetails");
       } else {
         console.error("Sign-in failed: No token returned.");
       }
