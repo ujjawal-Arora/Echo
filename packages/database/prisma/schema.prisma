@@ -24,6 +24,10 @@ model User {
   interests          String[]   // Added interests field as an array of strings
   createdAt          DateTime     @default(now()) 
   updatedAt          DateTime     @updatedAt 
+  location           String?
+  lookingFor         String?
+  RelationShipType   relationType?
+  
   messages           Message[]    // One-to-many relationship with Message
   conversations      ConversationParticipant[] // Many-to-many relationship with Conversation through ConversationParticipant
 }
@@ -61,5 +65,10 @@ enum Gender {
   male
   female
   other
-  prefer_not_to_say
+}
+enum relationType {
+  LongTerm 
+  ShortTerm
+  Living 
+
 }

@@ -1,10 +1,8 @@
 import express, { Request, Response } from 'express';
 import { client } from '@repo/database/client'
-import jwt from "jsonwebtoken";
+import jwt ,{JwtPayload} from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET||"ujjawal";
-
-
 import { signUpvalidations, signInvalidations,userDetailsValidation } from '../validations/validations';
 
 const router = express.Router();
@@ -27,8 +25,16 @@ router.post("/signup", async (req: Request, res: any) => {
                
             },
         });
+        const token = jwt.sign(
+            {
+                id: newUser.id,        
+                email: newUser.email, 
+            },
+            JWT_SECRET,
+            { expiresIn: "1h" }  
+        );
 
-        return res.status(201).json({ message: "User created successfully", user: newUser });
+        return res.status(201).json({ message: "User created successfully", user: newUser,token });
     } catch (error) {
         console.error("Error signing up:", error);
         return res.status(500).json({ message: "Error creating user" });
@@ -61,12 +67,11 @@ router.post("/signin", async (req: Request, res: any) => {
         const token = jwt.sign(
             {
                 id: user.id,        
-                username: user.email, 
+                email: user.email, 
             },
             JWT_SECRET,
             { expiresIn: "1h" }  
         );
-
         return res.json({
             message: "Logged in successfully",
             token,   
@@ -83,35 +88,52 @@ router.post("/signin", async (req: Request, res: any) => {
 })
 
   
-  router.post('/userdetails', async (req: Request, res: any) => {
-    const { email } = req.body; 
-    const validation = userDetailsValidation.safeParse(req.body);
-  console.log(email,validation)
-    if (!validation.success) {
-      return res.status(400).json({ message: "Validation failed", errors: validation.error });
-    }
-  
-    const { bio, gender, interests, profilePic } = validation.data;
-  
-    try {
-      const updatedUser = await client.user.update({
-        where: { email },
-        data: {
-          bio,
-          gender,
-          interests,
-          profilePic,
-        },
-      });
-  
-      return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
-    } catch (error) {
-      console.error("Error updating user details:", error);
-      return res.status(500).json({ message: "Error updating user details" });
-    }
-  });
-  
 
+router.post('/userdetails', async (req: Request, res: any) => {
+    const { token, ...userDetails } = req.body; // Extract token and user details from request body
+    console.log("token:", token);
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+        const email = decoded.email;
+        console.log("email:", email);
+
+        if (!email) {
+            return res.status(400).json({ message: "Invalid token", errors: "Email not found in token" });
+        }
+//formated error
+        const validation = userDetailsValidation.safeParse(userDetails);
+        if (!validation.success) {
+            const formattedErrors = validation.error.errors.map((err) => ({
+                path: err.path.join('.'),
+                message: err.message,
+            }));
+            return res.status(400).json({ message: "Validation failed", errors: formattedErrors });
+        }
+
+        const { bio, gender, interests, profilePic, location, lookingFor, RelationShipType } = validation.data;
++console.log("Interests:", interests);
+
+        const updatedUser = await client.user.update({
+            where: { email },
+            data: {
+                bio,
+                gender,
+                interests,
+                profilePic,
+                location,
+                lookingFor,
+                RelationShipType,
+            },
+        });
+
+        return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
+    } catch (error) {
+        console.error("Error updating user details:", error);
+
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 router.get('/getallconversations/:id', async (req: express.Request, res: any) => {
     try {

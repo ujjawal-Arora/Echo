@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Card from "./Card";
 
 // Define the type for card data
+
 interface CardData {
   id: number;
   firstName: string;
@@ -12,6 +13,9 @@ interface CardData {
   bio:string,
   imageUrl: string
   interests:string[],
+  location: string
+  lookingFor: string[];
+  relationshipType: string;
 }
 
 function SwipeCards() {
@@ -39,10 +43,7 @@ function SwipeCards() {
   );
 }
 
-export default SwipeCards;
-
-// Example card data
-const cardData: CardData[] = [
+export default SwipeCards;const cardData: CardData[] = [
   { 
     id: 1, 
     firstName: "John", 
@@ -51,7 +52,10 @@ const cardData: CardData[] = [
     description: "A passionate developer.", 
     bio: "John has been coding for over 10 years, working with multiple startups.", 
     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPRv-1_yoVy18Aki4wzA4FZ9v9VY-Ddr_UOw&s", 
-    interests: ["Coding", "Gaming", "Music", "Traveling", "Photography"] // Added interests
+    interests: ["Coding", "Gaming", "Music", "Traveling", "Photography"],
+    location: "San Francisco, CA",
+    lookingFor: ["Creative individuals", "Tech enthusiasts"],
+    relationshipType: "Long-term" // New field
   },
   { 
     id: 2, 
@@ -61,7 +65,10 @@ const cardData: CardData[] = [
     description: "A creative designer.", 
     bio: "Jane specializes in UX/UI design and has a keen eye for detail.", 
     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvVFvvUuAm58l28erbR3XBHFMY5g1WN6s3uw&sg", 
-    interests: ["Design", "Art", "Fashion", "Travel", "Reading"] // Added interests
+    interests: ["Design", "Art", "Fashion", "Travel", "Reading"],
+    location: "New York, NY",
+    lookingFor: ["Artists", "Innovative thinkers"],
+    relationshipType: "Short-term" // New field
   },
   { 
     id: 3, 
@@ -71,7 +78,10 @@ const cardData: CardData[] = [
     description: "A skilled project manager.", 
     bio: "Sam manages large-scale projects and is an expert in Agile methodologies.", 
     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT03NgdF9L0GIRhUQriHTDoJt888Zte9DhNTA&s", 
-    interests: ["Project Management", "Agile", "Team Building", "Leadership", "Public Speaking"] // Added interests
+    interests: ["Project Management", "Agile", "Team Building", "Leadership", "Public Speaking"],
+    location: "Chicago, IL",
+    lookingFor: ["Leaders", "Organized individuals"],
+    relationshipType: "Long-term" // New field
   },
   { 
     id: 4, 
@@ -81,7 +91,10 @@ const cardData: CardData[] = [
     description: "An experienced marketer.", 
     bio: "Lisa has over 15 years of experience in digital marketing.", 
     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAViD9eGy7S_CYgzTzKR2A0SL_SQ-rQ2kpuw&s", 
-    interests: ["Marketing", "SEO", "Content Creation", "Social Media", "Networking"] // Added interests
+    interests: ["Marketing", "SEO", "Content Creation", "Social Media", "Networking"],
+    location: "Austin, TX",
+    lookingFor: ["Creative marketers", "Entrepreneurs"],
+    relationshipType: "Short-term" // New field
   },
   { 
     id: 5, 
@@ -91,7 +104,9 @@ const cardData: CardData[] = [
     description: "A data analyst with a knack for insights.", 
     bio: "Mike uses data to help businesses make informed decisions.", 
     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMEO19ulu-z24tMwNq6Xwl7WjEqqwPfAYH7A&s", 
-    interests: ["Data Analysis", "Statistics", "Machine Learning", "Research", "Business Intelligence"] // Added interests
+    interests: ["Data Analysis", "Statistics", "Machine Learning", "Research", "Business Intelligence"],
+    location: "Seattle, WA",
+    lookingFor: ["Analytical thinkers", "Problem solvers"],
+    relationshipType: "Long-term" // New field
   }
 ];
-

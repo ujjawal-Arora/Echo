@@ -25,10 +25,16 @@ const SignUp = () => {
     try {
       const response = await axios.post('http://localhost:5173/api/signup', payload); 
       console.log('User signed up successfully:', response.data);
+      const data = response.data as { token: string; message: string; user: any };
+      const token=data.token;
       console.log(response.status);
-      if(response.status==201){
-        router.push('/signin'); 
-      }
+      if (response.status === 201 && token) {
+        // Store the token for further use, if needed
+        localStorage.setItem('token', token);
+
+        // Navigate to the user details page
+        router.push('/userdetails');
+    }
     } catch (error:any) {
       console.error('Error signing up:', error.response?.data || error.message);
     }

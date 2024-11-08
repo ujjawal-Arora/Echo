@@ -20,7 +20,7 @@ const SignIn = () => {
       });
   
       const { token }:any = response.data;
-  
+
       if (token) {
         localStorage.setItem("token", token);
         localStorage.setItem("email", email);

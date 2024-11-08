@@ -14,9 +14,12 @@ export const signInvalidations = z.object({
     password: z.string().min(8).max(30),
 })
 
-export  const  userDetailsValidation = z.object({
+export const userDetailsValidation = z.object({
     bio: z.string().optional(),
-    gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).optional(),
+    gender: z.enum(['male', 'female', 'other']).optional(),
     interests: z.array(z.string()).optional(),
     profilePic: z.string().optional(),
-  });
+    location: z.string().optional(),
+    lookingFor: z.string().optional(),
+    RelationShipType: z.enum([ "LongTerm", "ShortTerm","Living" ]).optional()
+});
