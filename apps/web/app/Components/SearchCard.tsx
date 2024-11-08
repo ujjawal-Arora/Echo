@@ -4,7 +4,7 @@ import Avator from './Avator';
 import  axios from 'axios';
 import {useDispatch} from '@repo/redux/store';
 import { addtomainarea } from '@repo/redux/chatslices';
-function SearchCard({ avatar, name, message, date ,count,keys,conversationId}:{avatar:string|null,name:string,message:string,date:ReactNode,count:number,keys:number,conversationId:string}) {
+function SearchCard({ avatar, name, message, date ,count,keys,conversationId,userId}:{avatar:string|null,name:string,message:string,date:ReactNode,count:number,keys:number,conversationId:string|undefined,userId:string}) {
   const dispatch=useDispatch();
   const handleclick=()=>{
     const fetchmessages=async()=>{
@@ -14,7 +14,8 @@ function SearchCard({ avatar, name, message, date ,count,keys,conversationId}:{a
         avatar:avatar,
         name:name,
         keys:keys,
-        conversationId:conversationId
+        conversationId:conversationId,
+        userId:userId
       }
       console.log(newdata);
       dispatch(addtomainarea(newdata))

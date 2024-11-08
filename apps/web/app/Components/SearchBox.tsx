@@ -1,10 +1,18 @@
+"use client"
 import { FaSearch } from 'react-icons/fa';
 import Avator from './Avator';
 import { BsThreeDots } from "react-icons/bs";
 import { LuPanelLeftClose } from "react-icons/lu";
-import { Dispatch,SetStateAction } from 'react';
+import { Dispatch,SetStateAction, useState ,useEffect} from 'react';
 
-function SearchBox({setclose}:{setclose:Dispatch<SetStateAction<boolean>>}) {
+function SearchBox({setclose,setData,data}:{setclose:Dispatch<SetStateAction<boolean>>,setData:any,data:any}) {
+  const [search,setsearch]=useState<string>();
+  const filtereddata = data?.filter((d: any) => 
+    d && d.username && d.username.toLowerCase().includes(search?.toLowerCase())
+  );
+  useEffect(() => {
+    setData(filtereddata && filtereddata.length ? filtereddata : data);
+  }, [search])
   return (
     <div>
       <div className='flex justify-between ml-2'>
@@ -28,6 +36,7 @@ function SearchBox({setclose}:{setclose:Dispatch<SetStateAction<boolean>>}) {
           type="text"
           placeholder="Search"
           className="flex-grow outline-none  border-none ml-2 bg-transparent text-black dark:text-white"
+          onChange={(e)=>setsearch(e.target.value)}
         />
       </div>
     </div>

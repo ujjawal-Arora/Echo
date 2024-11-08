@@ -43,7 +43,6 @@ router.post("/signup", async (req: Request, res: any) => {
 router.post("/signin", async (req: Request, res: any) => {
   
     console.log("password");
-
     const validations = signInvalidations.safeParse(req.body);
     
     if (!validations.success) {
@@ -86,6 +85,7 @@ router.post("/signin", async (req: Request, res: any) => {
         return res.status(500).json({ message: "Something went wrong", error });
     }
 })
+
 
   
 
@@ -135,6 +135,46 @@ router.post('/userdetails', async (req: Request, res: any) => {
     }
 });
 
+  router.post('/userdetails', async (req: Request, res: any) => {
+    const { email } = req.body; 
+    const validation = userDetailsValidation.safeParse(req.body);
+  console.log(email,validation)
+    if (!validation.success) {
+      return res.status(400).json({ message: "Validation failed", errors: validation.error });
+    }
+  
+    const { bio, gender, interests, profilePic } = validation.data;
+  
+    try {
+      const updatedUser = await client.user.update({
+        where: { email },
+        data: {
+          bio,
+          gender,
+          interests,
+          profilePic,
+        },
+      });
+  
+      return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
+    } catch (error) {
+      console.error("Error updating user details:", error);
+      return res.status(500).json({ message: "Error updating user details" });
+    }
+  });
+router.delete('/deleteMessage/:id',async(req:Request,res:any)=>{
+    try {
+        const response=await client.message.delete({
+            where:{
+                id:req.params.id
+            }
+        })
+        console.log(response);
+        return res.status(200).json(response)
+    } catch (error) {
+        return res.status(400).send("Error occurred")
+    }
+})
 router.get('/getallconversations/:id', async (req: express.Request, res: any) => {
     try {
         const conversations = await client.conversation.findMany({
@@ -195,16 +235,20 @@ router.get('/getallconversations/:id', async (req: express.Request, res: any) =>
 });
 router.get('/getmessages/:id', async (req: Request, res: any) => {
     try {
-        const messages = await client.message.findMany({
+        let messages = await client.message.findMany({
             where: {
                 conversationId: req.params.id, 
             }
         });
-
-        if (messages.length === 0) {
-            return res.status(404).json({ message: "No messages found for this conversation" });
+        const primarymessage={
+            id:'1',
+            conversationId:'1',
+            senderId:'1',
+            body:'Messages are end-to-end encrypted, No one outside of this chat can read them',
+            createdAt:new Date(),
+            updatedAt:new Date()
         }
-
+        messages=[primarymessage,...messages]
         return res.json(messages);
     } catch (error) {
         console.error(error); 
@@ -235,4 +279,57 @@ router.post("/addconvp",async(req:any,res:any)=>{
         return res.status(error).json({ message:error})
     }
 })
+router.post('/linkusers', async (req: Request, res: any) => {
+    const { userId1, userId2 } = req.body;
+    console.log(userId1,userId2);
+    if (!userId1 || !userId2) {
+        return res.status(400).json({ message: "Both userId1 and userId2 are required" });
+    }
+
+    try {
+        // Check if a conversation already exists between these two users
+        const existingConversation = await client.conversation.findFirst({
+            where: {
+                participants: {
+                    every: {
+                        OR: [
+                            { userId: userId1 },
+                            { userId: userId2 }
+                        ]
+                    }
+                }
+            },
+            include: { participants: true }
+        });
+
+        let conversation;
+        if (existingConversation) {
+            // If a conversation already exists, use it
+            conversation = existingConversation;
+        } else {
+            // Otherwise, create a new conversation
+            conversation = await client.conversation.create({
+                data: {
+                    participants: {
+                        create: [
+                            { userId: userId1 },
+                            { userId: userId2 }
+                        ]
+                    }
+                },
+                include: { participants: true }
+            });
+        }
+
+        return res.status(200).json({
+            message: "Conversation linked successfully",
+            conversationId: conversation.id,
+            participants: conversation.participants
+        });
+
+    } catch (error) {
+        console.error("Error linking users to conversation:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 export default router;
