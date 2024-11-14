@@ -26,8 +26,12 @@ model User {
   updatedAt          DateTime     @updatedAt 
   location           String?
   lookingFor         String?
+  Accepted           Boolean      @default(false) 
   RelationShipType   relationType?
-  
+   
+  requests           String[]    
+  sentRequests       String[] 
+
   messages           Message[]    // One-to-many relationship with Message
   conversations      ConversationParticipant[] // Many-to-many relationship with Conversation through ConversationParticipant
 }

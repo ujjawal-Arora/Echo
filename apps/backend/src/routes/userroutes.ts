@@ -101,7 +101,6 @@ router.post('/userdetails', async (req: Request, res: any) => {
         if (!email) {
             return res.status(400).json({ message: "Invalid token", errors: "Email not found in token" });
         }
-//formated error
         const validation = userDetailsValidation.safeParse(userDetails);
         if (!validation.success) {
             const formattedErrors = validation.error.errors.map((err) => ({
@@ -332,4 +331,141 @@ router.post('/linkusers', async (req: Request, res: any) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+// Add senderId to the recipient's requests array if not already present
+
+
+  router.post("/sendreq",async(req:any,res:any)=>{
+    const { recieverId,senderId } = req.body;
+              
+  
+    await client.user.update({
+      where: { id: recieverId },
+      data: {
+        requests: { push: senderId }
+      }
+    });
+    res.status(200).json({ message: "Request sent successfully" });
+})
+router.post("/sendUser", async (req: any, res: any) => {
+    try {
+      const { userId } = req.body;
+  
+      const user = await client.user.findUnique({
+        where: { id: userId },
+        select: { lookingFor: true, gender: true },
+      });
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      const genderToMatch = user.lookingFor as "male" | "female" | "other";
+  
+      const users = await client.user.findMany({
+        where: {
+          gender: genderToMatch, 
+          id: { not: userId },  
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          bio: true,
+          profilePic: true,
+          interests: true,
+          location: true,
+          lookingFor: true,
+          RelationShipType: true,
+        },
+        take: 10, // Limit to 10 users
+      });
+  
+      res.status(200).json(users);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+
+  });
+  router.post('/requestdata', async (req: any, res: any) => {
+    try {
+      const { userId } = req.body;
+  
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID is missing' });
+      }
+  
+      const user = await client.user.findUnique({
+        where: { id: userId },
+        select: { requests: true },
+      });
+      
+  
+      if (!user || !user.requests || user.requests.length === 0) {
+        return res.status(404).json({ error: 'User not found or no requests available' });
+      }
+  
+      const requestedUsers = await client.user.findMany({
+        where: {
+          id: { in: user.requests },
+        },
+        select: {
+          id: true,
+          username: true,
+          bio: true,
+          gender: true,
+          profilePic: true,
+          interests: true,
+          location: true,
+          lookingFor: true,
+          RelationShipType: true,
+        },
+      });
+  
+      
+      res.json( requestedUsers );
+    } catch (error) {
+      console.error("Error in fetching request data:", error);
+      res.status(500).json({ error: 'An error occurred while fetching request data' });
+    }
+  });
+  
+  router.post('/deleteReq', async (req: Request, res: any) => {
+    const { reqComeId, userId, accepted } = req.body;
+    console.log("req id that come ",reqComeId);
+  
+    if (!reqComeId || !userId) {
+      return res.status(400).json({ error: "Request ID and User ID are required" });
+    }
+  
+    try {
+      const user = await client.user.findUnique({
+        where: { id: userId },
+        select: { requests: true },
+      });
+  
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      const updatedRequests = user.requests.filter((requestId: string) => requestId !== reqComeId);
+  
+      const updatedUser = await client.user.update({
+        where: { id: userId },
+        data: {
+          Accepted: accepted,           
+          requests: updatedRequests,       
+        },
+      });
+  
+    res.status(200).json({
+        message: `Request ${accepted ? "accepted" : "deleted"}`,
+        Accepted:accepted
+      });
+    } catch (error) {
+      console.error("Error handling request:", error);
+      res.status(500).json({ error: "Failed to handle request" });
+    }
+  });
+  
 export default router;

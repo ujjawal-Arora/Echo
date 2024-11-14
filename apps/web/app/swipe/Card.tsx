@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
+
+import axios from 'axios';
 import { AiOutlineLeft, AiOutlineRight } from 'react-icons/ai'
 interface CardProps {
   card: {
     id: number;
-    firstName: string;
-    lastName: string;
+    username: string;
     gender: string;
     description: string;
     interests: string[];
     bio: string;
-    imageUrl: string;
+    profilePic: string;
     lookingFor: string[];
   relationshipType: string;
     location: string;
@@ -22,7 +23,7 @@ const Card = ({ card, onSwipe }: CardProps) => {
   const [boxShadow, setBoxShadow] = useState("0px 10px 30px rgba(0, 0, 0, 0.2)");
   const [showSticker, setShowSticker] = useState("");
   const [showPopup, setShowPopup] = useState(false);
-
+// console.log("card at swipe",card.bio)
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-150, 150], [-20, 20]);
   const opacity = useTransform(x, [-200, 0, 200], [0, 1, 0]);
@@ -45,8 +46,10 @@ const Card = ({ card, onSwipe }: CardProps) => {
     setShowSticker("");
   };
 
-  const handleDragEnd = (event: any, info: any) => {
+  const handleDragEnd = async (event: any, info: any) => {
     if (info.offset.x > 100) {
+      await handleSwipeRight(); 
+
       onSwipe(card.id); // Right swipe
       resetCard();
     } else if (info.offset.x < -100) {
@@ -69,10 +72,22 @@ const Card = ({ card, onSwipe }: CardProps) => {
   };
 
   // Function to handle swiping right
-  const handleSwipeRight = () => {
+  const handleSwipeRight = async() => {
     x.set(300); // Move right
     onSwipe(card.id); // Call the swipe function
-  };
+      try {
+        const userId =localStorage.getItem('userId');
+        const response = await axios.post('http://localhost:5173/api/sendreq', { senderId: userId,recieverId: card.id});
+        console.log("Swiped right:", (response.data as { message: string }).message);
+      } catch (error) {
+        if ((error)) {
+          console.error("Error swiping right:", error);
+        } else {
+          console.error("An unexpected error occurred:", error);
+        }
+      }
+    
+    }
 
   return (
     <>
@@ -95,7 +110,7 @@ const Card = ({ card, onSwipe }: CardProps) => {
           <div
             className="absolute inset-0 rounded-2xl bg-cover bg-center"
             style={{
-              backgroundImage: `url(${card.imageUrl})`,
+              backgroundImage: `url(${card.profilePic})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
@@ -115,7 +130,7 @@ const Card = ({ card, onSwipe }: CardProps) => {
 
             {/* Bottom Content */}
             <div className="bg-black bg-opacity-60 w-full py-4 rounded-lg text-left px-6 mt-auto">
-              <div className="text-xl font-bold">{`${card.firstName} ${card.lastName}`}</div>
+              <div className="text-xl font-bold">{`${card.username} `}</div>
               <div className="text-sm text-gray-300">{card.gender}</div>
               <div className="mt-2 text-gray-400 text-sm flex items-center">
                 <span className="truncate">{card.bio}</span>
@@ -147,7 +162,7 @@ const Card = ({ card, onSwipe }: CardProps) => {
     </button>
 
     <h2 className="text-3xl px-4 font-bold text-pink-500 mb-1">
-      {card.firstName} {card.lastName}
+      {card.username}
     </h2>
     <p className="text-lg px-4 font-medium text-gray-300 mb-4">{card.gender}</p>
 
@@ -171,7 +186,7 @@ const Card = ({ card, onSwipe }: CardProps) => {
         >
           <path d="M10 2a1 1 0 00-1 1v7H2a1 1 0 000 2h7v7a1 1 0 002 0v-7h7a1 1 0 000-2h-7V3a1 1 0 00-1-1z" />
         </svg>
-        {card.lookingFor.join(", ")}
+        {card.lookingFor}
       </p>
     </div>
 

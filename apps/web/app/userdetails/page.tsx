@@ -74,8 +74,10 @@ const UserDetailsPage = () => {
         const uploadedImage = await uploadFile(profilePic);
         profilePicUrl = uploadedImage.secure_url;
       }
+      
+
+
   
-      // Prepare user details with all fields
       const userDetails = {
         token: localStorage.getItem("token"),
         profilePic: profilePicUrl,
@@ -205,18 +207,16 @@ const UserDetailsPage = () => {
   <option value="" className="text-white">
     Select Relationship Type
   </option>
-  <option value="friendship" className="text-gray-800">
-    Friendship
+  <option value="male" className="text-gray-800">
+    Male
   </option>
-  <option value="relationship" className="text-gray-800">
-    Relationship
+  <option value="female" className="text-gray-800">
+    Female
   </option>
-  <option value="marriage" className="text-gray-800">
-    Marriage
+  <option value="other" className="text-gray-800">
+    Other
   </option>
-  <option value="casual" className="text-gray-800">
-    Casual
-  </option>
+  
 </select>
 
 <style jsx>{`
