@@ -27,10 +27,14 @@ const SignUp = () => {
       console.log('User signed up successfully:', response.data);
       const data = response.data as { token: string; message: string; user: any };
       const token=data.token;
-      console.log(response.status);
+      const userId=data.user.id
+      console.log("response of the user",userId);
       if (response.status === 201 && token) {
         // Store the token for further use, if needed
+        
         localStorage.setItem('token', token);
+        localStorage.setItem('userId',userId)
+
 
         // Navigate to the user details page
         router.push('/userdetails');

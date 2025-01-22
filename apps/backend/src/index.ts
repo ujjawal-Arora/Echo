@@ -10,6 +10,7 @@ const appusers = new Map<string, string>();
 app.use(cors({
     origin: '*'
 }));
+
 app.use(Express.json());
 app.use("/api", router);
 

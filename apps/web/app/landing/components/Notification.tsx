@@ -89,3 +89,21 @@ function Notification() {
 }
 
 export default Notification;
+
+// while(!q.isEmpty()){
+//   int a=q.remove();
+//   if(a==destination){
+//    flag=true;
+//     break;
+//   }
+//   if(!map.containsKey(a)){
+//     continue;
+//   }
+//   List<Integer>list=map.get(a);
+//   for(int i=0;i<list.size();i++){
+//     if(!visit[list.get(i)]){
+//       visit[list.get(i)]=true;
+//       q.add(list.get(i));
+//     }
+//   }
+// }

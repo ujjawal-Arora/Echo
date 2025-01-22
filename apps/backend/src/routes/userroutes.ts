@@ -174,6 +174,7 @@ router.delete('/deleteMessage/:id',async(req:Request,res:any)=>{
         return res.status(400).send("Error occurred")
     }
 })
+
 router.get('/getallconversations/:id', async (req: express.Request, res: any) => {
     try {
         const conversations = await client.conversation.findMany({
