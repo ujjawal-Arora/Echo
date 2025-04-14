@@ -1,7 +1,10 @@
-import FirstPage from "./components/FirstPage"
-import SecondPage from "./components/SecondPage"
+"use client"
+import { useRouter } from "next/navigation"; 
+import FirstPage from "./components/FirstPage";
+import SecondPage from "./components/SecondPage";
 import ThirdPage from "./components/ThirdPage";
 import Notification from "./components/Notification";
+
 export default function Landing() {
     return (
         <div className="min-h-screen bg-black">
@@ -12,16 +15,19 @@ export default function Landing() {
             <section>
                 <SecondPage />
             </section>
-            <section>
+            <section>3
                 <ThirdPage />
             </section>
         </div>
-    )
+    );
 }
+
 function TopBar() {
+    const router = useRouter();
+
     return (
-        <div className="flex  bg-black  text-white justify-between p-2">
-            <div className="flex flex-col  justify-center">
+        <div className="flex bg-black text-white justify-between p-2">
+            <div className="flex flex-col justify-center">
                 <img src="/Logo.png" className="flex w-50 h-10" />
             </div>
             <div className="flex flex-col justify-center">
@@ -34,14 +40,19 @@ function TopBar() {
                 </div>
             </div>
             <div className="flex gap-4 p-4">
-                {/* <div className="p-2 pr-0 rounded-full border-2 border-[#DB1A5A] bg-transparent flex cursor-pointer h-fit" >
-                    <IoNotificationsOutline className="text-2xl text-white" />
-                    <div className="h-2 w-2 rounded-full bg-[#DB1A5A] relative right-[30%] top-[100%]"></div>
-                </div> */}
-                <Notification/>
-                <button className="text-[#DB1A5A] p-2 bg-transparent border-2 hover:bg-[#DB1A5A] hover:text-gray-100 border-[#DB1A5A] rounded-xl font-bold">SIGN IN</button>
-                <button className="bg-[#DB1A5A] p-2 border-2 border-[#DB1A5A] hover:bg-transparent hover:text-[#DB1A5A] text-gray-100 rounded-xl font-bold">SIGN UP</button>
+                <Notification />
+                <button 
+                    onClick={() => router.push("/signup")} 
+                    className="text-[#DB1A5A] p-2 bg-transparent border-2 hover:bg-[#DB1A5A] hover:text-gray-100 border-[#DB1A5A] rounded-xl font-bold"
+                >
+                    SIGN IN
+                </button>
+                <button 
+                    className="bg-[#DB1A5A] p-2 border-2 border-[#DB1A5A] hover:bg-transparent hover:text-[#DB1A5A] text-gray-100 rounded-xl font-bold"
+                >
+                    SIGN UP
+                </button>
             </div>
         </div>
-    )
+    );
 }
