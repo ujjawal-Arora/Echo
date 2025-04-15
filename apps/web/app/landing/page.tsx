@@ -4,10 +4,14 @@ import FirstPage from "./components/FirstPage";
 import SecondPage from "./components/SecondPage";
 import ThirdPage from "./components/ThirdPage";
 import Notification from "./components/Notification";
+import Footer from "../Components/Footer";
+import toast, { Toaster } from 'react-hot-toast';
+import { useEffect, useState } from 'react';
 
 export default function Landing() {
     return (
-        <div className="min-h-screen bg-black">
+        <div className="min-h-screen bg-zinc-900">
+            <Toaster position="top-center" />
             <TopBar />
             <section>
                 <FirstPage />
@@ -18,14 +22,41 @@ export default function Landing() {
             <section>3
                 <ThirdPage />
             </section>
+            <section>
+                <Footer />
+            </section>
         </div>
     );
 }
+
 function TopBar() {
     const router = useRouter();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    useEffect(() => {
+        const userId = localStorage.getItem('userId');
+        setIsLoggedIn(!!userId);
+    }, []);
+
+    const handleFindMatch = () => {
+        if (!isLoggedIn) {
+            toast.error('Please login first to find your match!');
+            router.push('/signin');
+            return;
+        }
+        router.push('/swipe');
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        setIsLoggedIn(false);
+        toast.success('Logged out successfully!');
+        router.push('/landing');
+    };
 
     return (
-        <div className="flex bg-black text-white justify-between p-2">
+        <div className="flex bg-zinc-900 shadow-xl border-b border-pink-500/30 text-white justify-between p-2">
             <div className="flex flex-col justify-center">
                 <img src="/Logo.png" className="flex w-50 h-10" />
             </div>
@@ -38,21 +69,33 @@ function TopBar() {
                     <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">CHAT</h1>
                 </div>
             </div>
-            <div className="flex gap-4 p-4">
-                <Notification />
+            <div className="flex items-center gap-4">
+                {isLoggedIn && <Notification />}
+                {!isLoggedIn ? (
+                    <>
+                        <button 
+                            onClick={() => router.push("/signin")} 
+                            className="text-[#DB1A5A] p-2 bg-transparent border-2 hover:bg-[#DB1A5A] hover:text-gray-100 border-[#DB1A5A] rounded-xl font-bold"
+                        >
+                            SIGN IN
+                        </button>
+                        <button 
+                            onClick={() => router.push("/signup")}
+                            className="bg-[#DB1A5A] p-2 border-2 border-[#DB1A5A] hover:bg-transparent hover:text-[#DB1A5A] text-gray-100 rounded-xl font-bold"
+                        >
+                            SIGN UP
+                        </button>
+                    </>
+                ) : (
+                    <button 
+                        onClick={handleLogout}
+                        className="text-[#DB1A5A] p-2 bg-transparent border-2 hover:bg-[#DB1A5A] hover:text-gray-100 border-[#DB1A5A] rounded-xl font-bold"
+                    >
+                        LOGOUT
+                    </button>
+                )}
                 <button 
-                    onClick={() => router.push("/signup")} 
-                    className="text-[#DB1A5A] p-2 bg-transparent border-2 hover:bg-[#DB1A5A] hover:text-gray-100 border-[#DB1A5A] rounded-xl font-bold"
-                >
-                    SIGN IN
-                </button>
-                <button 
-                    className="bg-[#DB1A5A] p-2 border-2 border-[#DB1A5A] hover:bg-transparent hover:text-[#DB1A5A] text-gray-100 rounded-xl font-bold"
-                >
-                    SIGN UP
-                </button>
-                <button 
-                    onClick={() => router.push("/swipe")}
+                    onClick={handleFindMatch}
                     className="bg-[#DB1A5A] p-2 border-2 border-[#DB1A5A] hover:bg-transparent hover:text-[#DB1A5A] text-gray-100 rounded-xl font-bold"
                 >
                     FIND YOUR MATCH

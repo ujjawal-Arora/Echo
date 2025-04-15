@@ -3,6 +3,8 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import { io } from "socket.io-client";
 import axios from 'axios';
 import { AiOutlineLeft, AiOutlineRight } from 'react-icons/ai'
+import toast, { Toaster } from 'react-hot-toast';
+
 interface CardProps {
   card: {
     id: number;
@@ -73,6 +75,7 @@ const Card = ({ card, onSwipe }: CardProps) => {
 
   // Function to handle swiping right
   const handleSwipeRight = async() => {
+    const loadingToast = toast.loading('Sending friend request...');
     x.set(300); // Move right
     onSwipe(card.id); // Call the swipe function
     try {
@@ -97,7 +100,11 @@ const Card = ({ card, onSwipe }: CardProps) => {
       setTimeout(() => {
         socket.disconnect();
       }, 1000);
-    } catch (error) {
+
+      toast.success('Friend request sent successfully!', { id: loadingToast });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Error sending friend request. Please try again.';
+      toast.error(errorMessage, { id: loadingToast });
       console.error("Error swiping right:", error);
     }
   }
@@ -105,6 +112,7 @@ const Card = ({ card, onSwipe }: CardProps) => {
   return (
     <>
       <div className="flex justify-center items-center h-screen gap-11">
+        <Toaster position="top-center" />
         {/* Card */}
         <motion.div
           className="relative justify-between bg-blue-900 z-50 items-center text-white h-[80vh] w-[50vh] rounded-2xl p-6 text-center border border-gray-700 shadow-xl"

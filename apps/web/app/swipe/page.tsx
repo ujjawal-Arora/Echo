@@ -1,7 +1,8 @@
-"use client"
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import Card from './Card';
+"use client";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import Card from "./Card";
+
 interface CardData {
   id: number;
   username: string;
@@ -18,54 +19,83 @@ interface CardData {
 function SwipeCards() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
 
-  // Fetch the user data using axios
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userId = localStorage.getItem('userId');
+        const userId = localStorage.getItem("userId");
         if (!userId) {
-          setError('User ID not found. Please log in again.');
+          setError("User ID not found. Please log in again.");
           setLoading(false);
           return;
         }
-
-        console.log('Fetching users with userId:', userId);
-        const response = await axios.post('http://localhost:5173/api/sendUser', {
-          userId: userId
+  
+        console.log("Fetching users with userId:", userId);
+        const response = await axios.post("http://localhost:5173/api/sendUser", {
+          userId: userId,
         });
-        
-        console.log('Response from server:', response.data);
-        if (Array.isArray(response.data)) {
-          setCards(response.data as CardData[]);
-        } else {
-          console.error('Unexpected response format:', response.data);
-          setError('Received invalid data format from server');
-        }
+  
+        console.log("Response from server:", response.data);
+  
+        setTimeout(() => {
+          if (Array.isArray(response.data)) {
+            setCards(response.data as CardData[]);
+          } else {
+            console.error("Unexpected response format:", response.data);
+            setError("Received invalid data format from server");
+          }
+          setLoading(false);
+        }, 3000);
+  
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch user data';
+        const errorMessage =
+          err.response?.data?.message || err.message || "Failed to fetch user data";
         setError(errorMessage);
-        console.error('Error fetching users:', err);
-      } finally {
+        console.error("Error fetching users:", err);
         setLoading(false);
       }
     };
-
+  
     fetchUserData();
-  }, []); // Empty dependency array means this runs only once when the component mounts
+  }, []);
+  
 
   const handleSwipe = (id: number) => {
-    // Remove the swiped card from the list
     setCards((prevCards) => prevCards.filter((card) => card.id !== id));
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen bg-zinc-900">
+        <div className="flex flex-col items-center justify-center bg-white/10 backdrop-blur-md px-6 py-8 rounded-2xl shadow-lg border border-white/20">
+          <div className="relative mb-4">
+            <div className="h-12 w-12 border-4 border-pink-300 border-t-transparent rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-pink-400 text-xl animate-pulse">💖</span>
+            </div>
+          </div>
+          <p className="text-white text-sm font-light italic">Finding your special one...</p>
+        </div>
+      </div>
+    );
+    
   }
 
   if (error) {
-    return <div>{error}</div>;
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-zinc-900">
+        <p className="text-red-400 text-center">{error}</p>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-zinc-900">
+        <p className="text-white text-lg">No matches found. Check back later!</p>
+      </div>
+    );
   }
 
   return (
@@ -78,71 +108,3 @@ function SwipeCards() {
 }
 
 export default SwipeCards;
-
-// const cardData: CardData[] = [
-//   { 
-//     id: 1, 
-//     firstName: "John", 
-//     lastName: "Doe", 
-//     gender: "Male", 
-//     description: "A passionate developer.", 
-//     bio: "John has been coding for over 10 years, working with multiple startups.", 
-//     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPRv-1_yoVy18Aki4wzA4FZ9v9VY-Ddr_UOw&s", 
-//     interests: ["Coding", "Gaming", "Music", "Traveling", "Photography"],
-//     location: "San Francisco, CA",
-//     lookingFor: ["Creative individuals", "Tech enthusiasts"],
-//     relationshipType: "Long-term" // New field
-//   },
-//   { 
-//     id: 2, 
-//     firstName: "Jane", 
-//     lastName: "Smith", 
-//     gender: "Female", 
-//     description: "A creative designer.", 
-//     bio: "Jane specializes in UX/UI design and has a keen eye for detail.", 
-//     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTvVFvvUuAm58l28erbR3XBHFMY5g1WN6s3uw&sg", 
-//     interests: ["Design", "Art", "Fashion", "Travel", "Reading"],
-//     location: "New York, NY",
-//     lookingFor: ["Artists", "Innovative thinkers"],
-//     relationshipType: "Short-term" // New field
-//   },
-//   { 
-//     id: 3, 
-//     firstName: "Lisa", 
-//     lastName: "Watson", 
-//     gender: "Non-binary", 
-//     description: "A skilled project manager.", 
-//     bio: "Lisa Watson large-scale projects and is an expert in Agile methodologies.", 
-//     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT03NgdF9L0GIRhUQriHTDoJt888Zte9DhNTA&s", 
-//     interests: ["Project Management", "Agile", "Team Building", "Leadership", "Public Speaking"],
-//     location: "Chicago, IL",
-//     lookingFor: ["Leaders", "Organized individuals"],
-//     relationshipType: "Long-term" // New field
-//   },
-//   { 
-//     id: 4, 
-//     firstName: "Lisa", 
-//     lastName: "Taylor", 
-//     gender: "Female", 
-//     description: "An experienced marketer.", 
-//     bio: "Lisa has over 15 years of experience in digital marketing.", 
-//     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAViD9eGy7S_CYgzTzKR2A0SL_SQ-rQ2kpuw&s", 
-//     interests: ["Marketing", "SEO", "Content Creation", "Social Media", "Networking"],
-//     location: "Austin, TX",
-//     lookingFor: ["Creative marketers", "Entrepreneurs"],
-//     relationshipType: "Short-term" // New field
-//   },
-//   { 
-//     id: 5, 
-//     firstName: "Mike", 
-//     lastName: "Johnson", 
-//     gender: "Male", 
-//     description: "A data analyst with a knack for insights.", 
-//     bio: "Mike uses data to help businesses make informed decisions.", 
-//     imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMEO19ulu-z24tMwNq6Xwl7WjEqqwPfAYH7A&s", 
-//     interests: ["Data Analysis", "Statistics", "Machine Learning", "Research", "Business Intelligence"],
-//     location: "Seattle, WA",
-//     lookingFor: ["Analytical thinkers", "Problem solvers"],
-//     relationshipType: "Long-term" // New field
-//   }
-// ];

@@ -3,6 +3,12 @@ import { useState } from "react";
 import uploadFile from "../Helper/upload";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { toast, Toaster } from "react-hot-toast";
+
+interface UserDetailsResponse {
+  success: boolean;
+  message?: string;
+}
 
 const UserDetailsPage = () => {
   const router = useRouter();
@@ -14,6 +20,8 @@ const UserDetailsPage = () => {
   const [interests, setInterests] = useState<string[]>([]);
   const [lookingFor, setLookingFor] = useState("");
   const [relationshipType, setRelationshipType] = useState("");
+  const [location, setLocation] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   const availableInterests = [
     "Dancing",
@@ -41,6 +49,7 @@ const UserDetailsPage = () => {
       setProfilePic(null);
     }
   };
+
   const handleRelationshipTypeChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -67,67 +76,83 @@ const UserDetailsPage = () => {
     setStep((prevStep) => prevStep - 1);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const loadingToast = toast.loading('Saving user details...');
+
     try {
-      let profilePicUrl = "";
-      if (profilePic) {
-        const uploadedImage = await uploadFile(profilePic);
-        profilePicUrl = uploadedImage.secure_url;
-      }
+      const token = localStorage.getItem("token");
+      const email = localStorage.getItem('email');
       
-      const email = localStorage.getItem("email");
-      if (!email) {
-        console.error("No email found in localStorage");
+      if (!token || !email) {
+        toast.error('Authentication information missing. Please sign in again.', { id: loadingToast });
+        router.push('/signin');
         return;
       }
 
-      // Convert relationshipType to match the enum values
-      let formattedRelationType = null;
-      if (relationshipType === "Long-term") {
-        formattedRelationType = "LongTerm";
-      } else if (relationshipType === "Short-term") {
-        formattedRelationType = "ShortTerm";
-      } else if (relationshipType === "Living") {
-        formattedRelationType = "Living";
+      // Validate required fields
+      if (!gender || !lookingFor || !bio || !location) {
+        toast.error('Please fill in all required fields.', { id: loadingToast });
+        return;
       }
 
+      // Upload profile picture if selected
+      let imageUrl = "";
+      if (profilePic) {
+        try {
+          const uploadResponse = await uploadFile(profilePic);
+          imageUrl = uploadResponse.secure_url; // Extract the secure_url from Cloudinary response
+        } catch (error) {
+          console.error("Error uploading profile picture:", error);
+          toast.error('Failed to upload profile picture. Please try again.', { id: loadingToast });
+          return;
+        }
+      }
+
+      // Create the user details object matching the validation schema
       const userDetails = {
+        token,
         email,
-        profilePic: profilePicUrl || "",
-        gender: gender.toLowerCase(),
-        bio: bio || "",
+        bio,
+        gender,
+        lookingFor,
         interests: interests || [],
-        lookingFor: lookingFor || "",
-        RelationShipType: formattedRelationType
+        location,
+        profilePic: imageUrl,
+        relationshipType: relationshipType || undefined
       };
 
-      console.log("Submitting user details:", userDetails);
-  
-      const response = await axios.post("http://localhost:5173/api/userdetails", userDetails);
-  
-      if (response.status === 200) {
-        console.log("User details saved successfully:", response.data);
-        router.push("/");
+      console.log("Sending user details:", userDetails);
+
+      const response = await axios.post<UserDetailsResponse>(
+        "http://localhost:5173/api/userdetails",
+        userDetails
+      );
+
+      if (response.data.success) {
+        toast.success('User details saved successfully!', { id: loadingToast });
+        router.push("/landing");
+      } else {
+        toast.error(response.data.message || 'Failed to save user details. Please try again.', { id: loadingToast });
       }
     } catch (error: any) {
-      console.error("Error saving user details:", error);
-      if (error.response) {
-        console.error("Error response data:", error.response.data);
-        if (error.response.data.errors) {
-          console.error("Validation errors:", error.response.data.errors);
-        }
-        console.error("Error response status:", error.response.status);
-      } else if (error.request) {
-        console.error("No response received:", error.request);
+      console.error("Error submitting user details:", error);
+      
+      // Handle validation errors
+      if (error.response?.data?.errors) {
+        const validationErrors = error.response.data.errors;
+        const errorMessages = validationErrors.map((err: any) => `${err.path}: ${err.message}`).join('\n');
+        toast.error(`Validation errors:\n${errorMessages}`, { id: loadingToast });
       } else {
-        console.error("Error setting up request:", error.message);
+        const errorMessage = error.response?.data?.message || 'Error saving user details. Please try again.';
+        toast.error(errorMessage, { id: loadingToast });
       }
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-8">
+      <Toaster position="top-center" />
       <div className="bg-transparent border shadow-lg rounded-lg px-10 p-8 w-full max-w-2xl ">
         <h1 className="text-3xl text-[#DB1A5A] text-center font-bold mb-6">
           Tell Us About Yourself
@@ -183,7 +208,7 @@ const UserDetailsPage = () => {
         {step === 2 && (
           <>
             <label className="block text-xl text-[#DB1A5A] mb-2">Select Gender:</label>
-            <div className="flex  space-x-4  mb-6">
+            <div className="flex space-x-4 mb-6">
               {["male", "female", "other"].map((g) => (
                 <label
                   key={g}
@@ -194,18 +219,18 @@ const UserDetailsPage = () => {
                     value={g}
                     checked={gender === g}
                     onChange={handleGenderChange}
-                    className="mr-4 accent-[#B81A4D] transform scale-125" // Custom pink color for the selected state
+                    className="mr-4 accent-[#B81A4D] transform scale-125"
                   />
                   {g.charAt(0).toUpperCase() + g.slice(1)}
                 </label>
               ))}
             </div>
 
-            <label className="block text-xl  text-[#DB1A5A]  mb-2">
+            <label className="block text-xl text-[#DB1A5A] mb-2">
               Relationship Type:
             </label>
             <div className="space-y-4 mb-6">
-              {["Long-term", "Short-term",  "Living"].map((type) => (
+              {["LongTerm", "ShortTerm", "Living"].map((type) => (
                 <label
                   key={type}
                   className="flex items-center text-gray-300 font-bold"
@@ -226,31 +251,35 @@ const UserDetailsPage = () => {
               Looking For:
             </label>
             <select
-  value={lookingFor}
-  onChange={(e) => setLookingFor(e.target.value)}
-  className="w-full p-3 text-white font-bold bg-[#61132e] bg-opacity-30 border border-pink-500 rounded-xl mb-8 focus:outline-none focus:ring-2 focus:ring-[#DB1A5A] hover:bg-opacity-40 transition-all duration-200 ease-in-out shadow-lg shadow-[#DB1A5A]/30 custom-select"
->
-  <option value="" className="text-white">
-    Select Relationship Type
-  </option>
-  <option value="male" className="text-gray-800">
-    Male
-  </option>
-  <option value="female" className="text-gray-800">
-    Female
-  </option>
-  <option value="other" className="text-gray-800">
-    Other
-  </option>
-  
-</select>
+              value={lookingFor}
+              onChange={(e) => setLookingFor(e.target.value)}
+              className="w-full p-3 text-white font-bold bg-[#61132e] bg-opacity-30 border border-pink-500 rounded-xl mb-6 focus:outline-none focus:ring-2 focus:ring-[#DB1A5A] hover:bg-opacity-40 transition-all duration-200 ease-in-out shadow-lg shadow-[#DB1A5A]/30 custom-select"
+            >
+              <option value="" className="text-white">
+                Select Gender Preference
+              </option>
+              <option value="male" className="text-gray-800">
+                Male
+              </option>
+              <option value="female" className="text-gray-800">
+                Female
+              </option>
+              <option value="other" className="text-gray-800">
+                Other
+              </option>
+            </select>
 
-<style jsx>{`
-  .custom-select option {
-    background-color: #61132e; /* Tailwind's gray-800 */
-    color: #ffffff;
-  }
-`}</style>
+            <label className="block text-xl text-[#DB1A5A] font-semibold mb-3">
+              Location:
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Enter your location"
+              className="w-full p-3 text-white font-bold bg-[#61132e] bg-opacity-30 border border-pink-500 rounded-xl mb-6 focus:outline-none focus:ring-2 focus:ring-[#DB1A5A] hover:bg-opacity-40 transition-all duration-200 ease-in-out shadow-lg shadow-[#DB1A5A]/30"
+            />
+
             <div className="flex justify-between">
               <button
                 onClick={handleBack}
@@ -260,34 +289,36 @@ const UserDetailsPage = () => {
               </button>
               <button
                 onClick={handleNext}
-                className="bg-[#DB1A5A] py-2 px-4 hover:bg-[#B81A4D]  rounded-lg  transition"
+                className="bg-[#DB1A5A] py-2 px-4 hover:bg-[#B81A4D] rounded-lg transition"
               >
                 Next
               </button>
             </div>
           </>
         )}
-{step === 3 && (
-  <>
-    <label className="block text-2xl font-semibold mb-4">
-      Select Your Interests:
-    </label>
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-      {availableInterests.map((interest) => (
-        <label key={interest} className="flex items-center text-gray-300 font-medium">
-          <input
-            type="checkbox"
-            value={interest}
-            checked={interests.includes(interest)}
-            onChange={() => handleInterestChange(interest)}
-            className="mr-3 accent-[#DB1A5A] transform scale-150 cursor-pointer transition-colors duration-300 ease-in-out"
-          />
-          {interest}
-        </label>
-      ))}
-    </div>
-    <div className="flex justify-between mt-6">
-    <button
+
+        {step === 3 && (
+          <>
+            <label className="block text-2xl font-semibold mb-4">
+              Select Your Interests:
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+              {availableInterests.map((interest) => (
+                <label key={interest} className="flex items-center text-gray-300 font-medium">
+                  <input
+                    type="checkbox"
+                    value={interest}
+                    checked={interests.includes(interest)}
+                    onChange={() => handleInterestChange(interest)}
+                    className="mr-3 accent-[#DB1A5A] transform scale-150 cursor-pointer transition-colors duration-300 ease-in-out"
+                  />
+                  {interest}
+                </label>
+              ))}
+            </div>
+
+            <div className="flex justify-between mt-6">
+              <button
                 onClick={handleBack}
                 className="bg-gray-600 py-2 px-4 rounded-lg hover:bg-gray-700 transition"
               >
@@ -299,10 +330,9 @@ const UserDetailsPage = () => {
               >
                 Finish
               </button>
-    </div>
-  </>
-)}
-
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

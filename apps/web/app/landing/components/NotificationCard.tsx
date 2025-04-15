@@ -3,6 +3,7 @@ import React from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation'; 
 import io from 'socket.io-client';
+import toast, { Toaster } from 'react-hot-toast';
 
 
 interface NotificationCardProps {
@@ -26,6 +27,7 @@ interface ApiResponse {
 const NotificationCard: any= ({ notification }:NotificationCardProps) => {
   const router = useRouter();
   const handleAcceptSubmit = async() => {
+    const loadingToast = toast.loading('Accepting request...');
     try {
       const response = await axios.post<ApiResponse>("http://localhost:5173/api/deleteReq", {
         reqComeId: notification.id,
@@ -52,14 +54,18 @@ const NotificationCard: any= ({ notification }:NotificationCardProps) => {
       // Disconnect socket after sending notifications
       socket.disconnect();
       
+      toast.success('Request accepted successfully!', { id: loadingToast });
       // Redirect to home page
       router.push("/");
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Error accepting request. Please try again.';
+      toast.error(errorMessage, { id: loadingToast });
       console.error("Error accepting request:", error);
     }
   };
   
   const handleDeleteSubmit = async() => {
+    const loadingToast = toast.loading('Rejecting request...');
     try {
       const response = await axios.post<ApiResponse>("http://localhost:5173/api/deleteReq", {
         reqComeId: notification.id,
@@ -80,15 +86,19 @@ const NotificationCard: any= ({ notification }:NotificationCardProps) => {
       // Disconnect socket after sending notifications
       socket.disconnect();
       
+      toast.success('Request rejected successfully!', { id: loadingToast });
       // Redirect to home page
       router.push("/home");
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Error rejecting request. Please try again.';
+      toast.error(errorMessage, { id: loadingToast });
       console.error("Error rejecting request:", error);
     }
   };
   
   return (
     <div className="flex items-center gap-2 justify-between p-4 bg-[#1a1a1a] rounded-lg text-white w-full max-w-sm">
+      <Toaster position="top-center" />
       <Avator
         name={notification.username}
         width={45}

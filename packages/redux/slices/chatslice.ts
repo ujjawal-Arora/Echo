@@ -3,6 +3,9 @@ import {createSlice} from '@reduxjs/toolkit';
 
 // Load initial state from localStorage if available
 const loadState = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     const serializedState = localStorage.getItem('chatState');
     if (serializedState === null) {
@@ -21,6 +24,9 @@ const chatSlice=createSlice({
     reducers:{
         addtomainarea:(state,action)=>{
             // Save the new state to localStorage
+            if (typeof window === 'undefined') {
+                return action.payload;
+            }
             try {
                 const serializedState = JSON.stringify(action.payload);
                 localStorage.setItem('chatState', serializedState);

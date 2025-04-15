@@ -5,6 +5,8 @@ import { io, Socket } from 'socket.io-client';
 import MainPart from "./Components/MainPart"
 import { useSelector } from '@repo/redux/store';
 import Search from './Components/Search';
+import Footer from './Components/Footer';
+
 export default function Home() {
 const dark=useSelector((state)=>state.Theme);
   const [online, setOnline] = useState<boolean>(false);
@@ -35,7 +37,7 @@ const dark=useSelector((state)=>state.Theme);
     }
   }
   return(
-    <div className={`flex overflow-hidden ${dark?"dark":"light"}`}>
+    <div className={`flex flex-col min-h-screen ${dark?"dark":"light"}`}>
      {showsearch && (
         <div 
         ref={searchRef}
@@ -44,8 +46,10 @@ const dark=useSelector((state)=>state.Theme);
             <Search conversationId={showsearch} />
         </div>
     )}
-      <Sidebar close={close} setclose={setclose}/>
-      <MainPart close={close} setshowsearch={setshowsearch} showsearch={showsearch}  setOnline={setOnline}/>
+      <div className="flex flex-1">
+        <Sidebar close={close} setclose={setclose}/>
+        <MainPart close={close} setshowsearch={setshowsearch} showsearch={showsearch}  setOnline={setOnline}/>
+      </div>
     </div>
   );
 }

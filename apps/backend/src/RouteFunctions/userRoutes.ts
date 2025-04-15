@@ -2,23 +2,23 @@ import { Request, Response } from "express";
 import { userDetailsValidation } from "../validations/validations";
 import { client } from "@repo/database/client";
 import jwt ,{JwtPayload} from "jsonwebtoken";
-import { PrismaClient, Gender } from "@prisma/client";
+import { PrismaClient, Gender, relationType } from "@prisma/client";
 
 const JWT_SECRET = process.env.JWT_SECRET||"ujjawal";
 
 
 async function UserDetails(req: Request, res: any) {
-    const { email, ...userDetails } = req.body; 
-    console.log("Email:", email);
-    console.log("User details:", userDetails);
+    const userDetails = req.body;
+    console.log("Received user details:", userDetails);
 
     try {
-        if (!email) {
+        if (!userDetails.email) {
             return res.status(400).json({ message: "Email is required" });
         }
 
         // Validate user details
         const validation = userDetailsValidation.safeParse(userDetails);
+        
         if (!validation.success) {
             const formattedErrors = validation.error.errors.map((err) => ({
                 path: err.path.join("."),
@@ -30,19 +30,35 @@ async function UserDetails(req: Request, res: any) {
 
         // Check if user exists
         const existingUser = await client.user.findUnique({
-            where: { email }
+            where: { email: userDetails.email }
         });
 
         if (!existingUser) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const { bio, gender, interests, profilePic, location, lookingFor, RelationShipType } = validation.data;
-        console.log("Validated data:", { bio, gender, interests, profilePic, location, lookingFor, RelationShipType });
+        const { bio, gender, interests, profilePic, location, lookingFor, relationshipType } = validation.data;
+        console.log("Validated data:", { bio, gender, interests, profilePic, location, lookingFor, relationshipType });
+
+        // Convert relationship type to enum value
+        let relationShipType: relationType | null = null;
+        if (relationshipType) {
+            switch (relationshipType) {
+                case 'LongTerm':
+                    relationShipType = relationType.LongTerm;
+                    break;
+                case 'ShortTerm':
+                    relationShipType = relationType.ShortTerm;
+                    break;
+                case 'Living':
+                    relationShipType = relationType.Living;
+                    break;
+            }
+        }
 
         // Update user details in the database
         const updatedUser = await client.user.update({
-            where: { email },
+            where: { email: userDetails.email },
             data: {
                 bio,
                 gender,
@@ -50,14 +66,15 @@ async function UserDetails(req: Request, res: any) {
                 profilePic,
                 location,
                 lookingFor,
-                RelationShipType,
+                RelationShipType: relationShipType
             },
         });
 
-        return res.status(200).json({ message: "User details updated successfully", user: updatedUser });
+        return res.status(200).json({ success: true, message: "User details updated successfully", user: updatedUser });
     } catch (error: any) {
         console.error("Error updating user details:", error);
         return res.status(500).json({ 
+            success: false,
             message: "Internal server error", 
             error: error?.message || "Unknown error occurred" 
         });
