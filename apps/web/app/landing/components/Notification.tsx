@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
-import { IoNotificationsOutline } from "react-icons/io5";
-import NotificationCard from './NotificationCard';
+import React, { useEffect, useState, useRef } from 'react';
+import { Bell } from 'lucide-react';
 import axios from 'axios';
+import io from 'socket.io-client';
+import NotificationCard from './NotificationCard';
 
 interface NotificationData {
   id: string;
@@ -11,82 +12,111 @@ interface NotificationData {
   profilePic: string;
 }
 
-function Notification() {
+interface ApiResponse {
+  requests: NotificationData[];
+}
+
+interface SocketNotification {
+  senderId: string;
+  senderUsername: string;
+  senderProfilePic: string;
+  timestamp: string;
+}
+
+const Notification = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
-  const boxRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
-  const OpentTheBox = () => {
-    setIsOpen(!isOpen);
+  const fetchNotifications = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) return;
+
+      const response = await axios.post<ApiResponse>('http://localhost:5173/api/requestdata', {
+        userId: userId
+      });
+
+      if (response.data?.requests) {
+        setNotifications(response.data.requests);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
   };
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const userId = localStorage.getItem('userId');
-        if (userId) { 
-          const response = await axios.post('http://localhost:5173/api/requestdata', { userId });
-          const notificationsData = Array.isArray(response.data) ? response.data : [];
-          setNotifications(notificationsData as NotificationData[]);
-          console.log("notifications", notificationsData)
-
-        }
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      }
-    };
     fetchNotifications();
+
+    const socket = io('http://localhost:5173');
+    const userId = localStorage.getItem('userId');
+
+    if (userId) {
+      socket.emit('connectUser', { userId, socketId: socket.id });
+    }
+
+    socket.on('right-swipe-notification', (data: SocketNotification) => {
+      const newNotification: NotificationData = {
+        id: data.senderId,
+        username: data.senderUsername,
+        bio: 'Swiped right on you!',
+        profilePic: data.senderProfilePic
+      };
+      setNotifications(prev => [newNotification, ...prev]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(event.target as Node)) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isOpen]);
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
-    <div className="relative">
-   <div
-  onClick={OpentTheBox}
-  className="relative p-2 rounded-full border-2 border-[#DB1A5A] bg-transparent flex items-center justify-center cursor-pointer h-10 w-10"
->
-  <IoNotificationsOutline className="text-2xl text-white" />
-  {notifications.length > 0 && (
-    <div className="absolute top-0 right-0 h-2 w-2 rounded-full bg-[#DB1A5A]"></div>
-  )}
-</div>
-
-
+    <div className="relative" ref={notificationRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+      >
+        <Bell className="w-6 h-6 text-white" />
+        {notifications.length > 0 && (
+          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
+        )}
+      </button>
 
       {isOpen && (
-        <div
-          ref={boxRef}
-          className="absolute top-12 right-0 mt-2 w-[48vh] h-[60vh] p-6 bg-[#1a1a1a]/95 text-white rounded-lg shadow-lg animate-slide-in"
-          style={{ zIndex: 1000 }}
-        >
-          <h4 className="font-semibold text-lg mb-4">Notifications</h4>
-          <p className="text-sm text-gray-300">Here are your latest updates.</p>
-          
-          <div className="mt-4 space-y-2">
-            {notifications.length > 0 ?
-            notifications.map((notification) => (
-              <NotificationCard key={notification.id} notification={notification} />
-            )): <p className='mt-1 text-[#DB1A5A]'>No Request Yet</p>
-          }
+        <div className="absolute right-0 mt-2 w-80 bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden z-50">
+          <div className="p-4">
+            <h3 className="text-white font-semibold mb-4">Notifications</h3>
+            <div className="space-y-4">
+              {notifications.length > 0 ? (
+                notifications.map((notification) => (
+                  <NotificationCard
+                    key={notification.id}
+                    notification={notification}
+                  />
+                ))
+              ) : (
+                <p className="text-gray-400 text-center">No new requests</p>
+              )}
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+};
 
 export default Notification;
 

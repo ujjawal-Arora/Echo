@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
-
+import { io } from "socket.io-client";
 import axios from 'axios';
 import { AiOutlineLeft, AiOutlineRight } from 'react-icons/ai'
 interface CardProps {
@@ -75,19 +75,32 @@ const Card = ({ card, onSwipe }: CardProps) => {
   const handleSwipeRight = async() => {
     x.set(300); // Move right
     onSwipe(card.id); // Call the swipe function
-      try {
-        const userId =localStorage.getItem('userId');
-        const response = await axios.post('http://localhost:5173/api/sendreq', { senderId: userId,recieverId: card.id});
-        console.log("Swiped right:", (response.data as { message: string }).message);
-      } catch (error) {
-        if ((error)) {
-          console.error("Error swiping right:", error);
-        } else {
-          console.error("An unexpected error occurred:", error);
-        }
-      }
-    
+    try {
+      const userId = localStorage.getItem('userId');
+      
+      // Send friendship request to the backend
+      const response = await axios.post('http://localhost:5173/api/sendreq', { 
+        senderId: userId,
+        receiverId: card.id
+      });
+      console.log("Swiped right:", (response.data as { message: string }).message);
+      
+      // Emit socket event for right-swipe notification
+      const socket = io("http://localhost:5173");
+      socket.emit("right-swipe", {
+        senderId: userId,
+        receiverId: card.id
+      });
+      console.log("Right-swipe notification sent");
+      
+      // Disconnect socket after sending notification
+      setTimeout(() => {
+        socket.disconnect();
+      }, 1000);
+    } catch (error) {
+      console.error("Error swiping right:", error);
     }
+  }
 
   return (
     <>

@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 
 import { handleSignIn, handleSignUp } from "../RouteFunctions/authRoutes";
-import { handleDeleteMessage, sendRequest,fetchRequestData, UserDetails,handleRequest,fetchUsers } from "../RouteFunctions/userRoutes";
+import { handleDeleteMessage, sendRequest,fetchRequestData, UserDetails,handleRequest,fetchUsers,getUserById } from "../RouteFunctions/userRoutes";
 import { getAllConversations, getMessages,addConversationMessage,linkUsersToConversation,getAcceptedUsers } from "../RouteFunctions/conversation";
 
 const router = express.Router();
@@ -23,5 +23,6 @@ router.post("/sendreq",sendRequest);
 router.post("/sendUser",fetchUsers);
 router.post("/requestdata",fetchRequestData);
 router.post("/deleteReq",handleRequest);
+router.get("/user/:id", getUserById);
 
 export default router

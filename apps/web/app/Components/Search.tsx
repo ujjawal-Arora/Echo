@@ -41,8 +41,8 @@ export default function Search({ conversationId }: { conversationId: string | un
             </div>
             <div className='max-h-[80vh] overflow-auto transition-all ease-in-out duration-500 bg-gray-50 dark:bg-[#121212] rounded-2xl m-4'>
                 {filteredMessages.map((d: any) => (
-                    <div key={d.id} className={d.senderId !== localStorage.getItem("id") ? "flex m-6" : "flex justify-end m-6"}>
-                        <div className={`text-md ${d.senderId !== localStorage.getItem("id") ? "dark:bg-neutral-700 bg-gray-300 text-black dark:text-white" : "bg-[#DB1A5A] text-white"} min-w-32 h-fit max-w-[40%] w-fit p-2 pl-4 pr-4 rounded-2xl rounded-bl-none`}>
+                    <div key={d.id} className={d.senderId !== localStorage.getItem("userId") ? "flex m-6" : "flex justify-end m-6"}>
+                        <div className={`text-md ${d.senderId !== localStorage.getItem("userId") ? "dark:bg-neutral-700 bg-gray-300 text-black dark:text-white" : "bg-[#DB1A5A] text-white"} min-w-32 h-fit max-w-[40%] w-fit p-2 pl-4 pr-4 rounded-2xl rounded-bl-none`}>
                             {d.body}
                             <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
                         </div>

@@ -75,18 +75,33 @@ const UserDetailsPage = () => {
         profilePicUrl = uploadedImage.secure_url;
       }
       
+      const email = localStorage.getItem("email");
+      if (!email) {
+        console.error("No email found in localStorage");
+        return;
+      }
 
+      // Convert relationshipType to match the enum values
+      let formattedRelationType = null;
+      if (relationshipType === "Long-term") {
+        formattedRelationType = "LongTerm";
+      } else if (relationshipType === "Short-term") {
+        formattedRelationType = "ShortTerm";
+      } else if (relationshipType === "Living") {
+        formattedRelationType = "Living";
+      }
 
-  
       const userDetails = {
-        token: localStorage.getItem("token"),
-        profilePic: profilePicUrl,
-        gender,
-        bio,
-        interests,
-        lookingFor,
-        relationshipType, 
+        email,
+        profilePic: profilePicUrl || "",
+        gender: gender.toLowerCase(),
+        bio: bio || "",
+        interests: interests || [],
+        lookingFor: lookingFor || "",
+        RelationShipType: formattedRelationType
       };
+
+      console.log("Submitting user details:", userDetails);
   
       const response = await axios.post("http://localhost:5173/api/userdetails", userDetails);
   
@@ -94,8 +109,19 @@ const UserDetailsPage = () => {
         console.log("User details saved successfully:", response.data);
         router.push("/");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving user details:", error);
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        if (error.response.data.errors) {
+          console.error("Validation errors:", error.response.data.errors);
+        }
+        console.error("Error response status:", error.response.status);
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      } else {
+        console.error("Error setting up request:", error.message);
+      }
     }
   };
   

@@ -72,6 +72,21 @@ async function getMessages(req: Request, res: any) {
         if (!conversationId) {
           return res.status(400).json({ message: "Missing conversation ID" });
         }
+        
+        console.log(`Fetching messages for conversation: ${conversationId}`);
+    
+        // Check if the conversation exists
+        const conversation = await client.conversation.findUnique({
+            where: { id: conversationId },
+        });
+        
+        if (!conversation) {
+            console.error("Conversation not found:", conversationId);
+            return res.status(404).json({ 
+                success: false,
+                message: "Conversation not found" 
+            });
+        }
     
         const primaryMessage = {
           id: "1",
@@ -90,6 +105,8 @@ async function getMessages(req: Request, res: any) {
             createdAt: "asc",
           },
         });
+        
+        console.log(`Found ${messages.length} messages for conversation: ${conversationId}`);
     
         return res.status(200).json({
           success: true,
@@ -109,16 +126,30 @@ async function getMessages(req: Request, res: any) {
 // Function to add a message to a conversation
  async function addConversationMessage(req: Request, res: any) {
     const { conversationId, senderId, body } = req.body;
-    console.log(conversationId, senderId, body);
+    console.log("Adding message to conversation:", { conversationId, senderId, body });
 
     try {
+        // Check if the conversation exists
+        const conversation = await client.conversation.findUnique({
+            where: { id: conversationId },
+        });
+        
+        if (!conversation) {
+            console.error("Conversation not found:", conversationId);
+            return res.status(404).json({ message: "Conversation not found" });
+        }
+        
+        // Check if the sender exists
         const userExists = await client.user.findUnique({
             where: { id: senderId },
         });
+        
         if (!userExists) {
+            console.error("User not found:", senderId);
             return res.status(400).json({ message: "Invalid senderId" });
         }
 
+        // Create the message
         const message = await client.message.create({
             data: {
                 conversationId,
@@ -127,6 +158,7 @@ async function getMessages(req: Request, res: any) {
             },
         });
 
+        console.log("Message created successfully:", message);
         return res.status(201).json({ msg: "Success", message });
     } catch (error) {
         console.error("Error adding conversation message:", error);
@@ -204,8 +236,25 @@ async function getMessages(req: Request, res: any) {
 
 async function getAcceptedUsers(req: Request, res: any) {
     try {
-        const {id} = req.params; // or however you get current user ID
-        const currentUserId=id;
+        const {id} = req.params;
+        const currentUserId = id as string;
+        console.log("Fetching accepted users for:", currentUserId);
+
+        // First, get all conversations for the current user
+        const userConversations = await client.conversation.findMany({
+            where: {
+                participants: {
+                    some: {
+                        userId: currentUserId
+                    }
+                }
+            },
+            include: {
+                participants: true
+            }
+        });
+        console.log("User's conversations:", JSON.stringify(userConversations, null, 2));
+
         const friendships = await client.friendship.findMany({
           where: {
             accepted: true,
@@ -220,9 +269,79 @@ async function getAcceptedUsers(req: Request, res: any) {
           },
         });
     
-        const partners = friendships.map((friendship) => {
+        console.log("Found friendships:", friendships.length);
+        console.log("Friendships:", JSON.stringify(friendships, null, 2));
+    
+        // Get conversations for each friendship
+        const partnersWithConversations = await Promise.all(friendships.map(async (friendship) => {
           const isSender = friendship.senderId === currentUserId;
           const partner = isSender ? friendship.receiver : friendship.sender;
+          
+          // Find the conversation between these users from the user's conversations
+          const conversation = userConversations.find(conv => 
+            conv.participants.some(p => p.userId === partner.id)
+          );
+    
+          console.log(`Conversation for ${partner.username}:`, conversation?.id || 'not found');
+    
+          // Create a new conversation if one doesn't exist
+          let conversationId = conversation?.id;
+          if (!conversationId) {
+            console.log(`Creating new conversation for ${partner.username}`);
+            const newConversation = await client.conversation.create({
+              data: {
+                participants: {
+                  create: [
+                    { userId: currentUserId },
+                    { userId: partner.id }
+                  ]
+                }
+              },
+              include: {
+                participants: true
+              }
+            });
+            conversationId = newConversation.id;
+            console.log(`Created new conversation: ${conversationId}`);
+
+            // Also create a conversation for the partner if they don't have one
+            const partnerConversations = await client.conversation.findMany({
+              where: {
+                participants: {
+                  some: {
+                    userId: partner.id
+                  }
+                }
+              },
+              include: {
+                participants: true
+              }
+            });
+
+            const partnerHasConversation = partnerConversations.some(conv => 
+              conv.participants.some(p => p.userId === currentUserId)
+            );
+
+            if (!partnerHasConversation) {
+              console.log(`Creating conversation for partner ${partner.username}`);
+              await client.conversation.create({
+                data: {
+                  participants: {
+                    create: [
+                      { userId: partner.id },
+                      { userId: currentUserId }
+                    ]
+                  }
+                },
+                include: {
+                  participants: true
+                }
+              });
+            }
+          }
+    
+          // Ensure conversationId is a string
+          const finalConversationId = conversationId || "";
     
           return {
             id: partner.id,
@@ -230,15 +349,16 @@ async function getAcceptedUsers(req: Request, res: any) {
             profilePic: partner.profilePic,
             bio: partner.bio,
             gender: partner.gender,
+            conversationIds: [finalConversationId],
           };
-        });
+        }));
     
-        res.status(200).json(partners);
+        console.log("Returning partners with conversations:", JSON.stringify(partnersWithConversations, null, 2));
+        res.status(200).json(partnersWithConversations);
       } catch (error) {
         console.error("Error fetching chat partners:", error);
         res.status(500).json({ error: "Something went wrong" });
       }
-    
 }
 
 

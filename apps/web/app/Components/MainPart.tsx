@@ -12,8 +12,11 @@ import { io, Socket } from 'socket.io-client';
 import { useDispatch, useSelector } from "@repo/redux/store";
 import { addDark, removedark } from "@repo/redux/themeslices";
 import RightClick from './ChatRightClickContext';
+import axios from 'axios';
+
 export default function MainPart({ close, setshowsearch, showsearch, setOnline }: { close: boolean, setshowsearch: Dispatch<SetStateAction<string | null>>, showsearch: string|null, setOnline: Dispatch<SetStateAction<boolean>> }) {
     const [messages, setMessages] = useState<any[]>([]);
+    const [pendingMessages, setPendingMessages] = useState<{[key: string]: any[]}>({});
     const state = useSelector((state) => state.Chat);
     const [sendMessage, setsendMessage] = useState<string>();
     const dispatch = useDispatch();
@@ -29,9 +32,19 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
         const newsocket = io("http://localhost:5173");
         setsocket(newsocket);
         newsocket.on("connect", () => {
-            newsocket.emit("connectUser", { userId: localStorage.getItem("id"), socketId: newsocket.id })
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+                console.error("User ID not found in localStorage");
+                return;
+            }
+            newsocket.emit("connectUser", { userId: userId, socketId: newsocket.id })
             console.log("Connected:", newsocket.id);
             setOnline(true);
+        });
+
+        // Add a listener for connection errors
+        newsocket.on("connect_error", (error) => {
+            console.error("Socket connection error:", error);
         });
 
         return () => {
@@ -41,19 +54,95 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     }, []);
 
     useEffect(() => {
-        if (state && state.getmessages?.data) {
-            console.log(state.getmessages.data)
-            setMessages(state.getmessages.data);
+        if (state && state.messages) {
+            console.log("Loading messages from Redux state:", state.messages);
+            setMessages(state.messages);
+            
+            // Check if there are any pending messages for this conversation
+            if (state.conversationId && pendingMessages[state.conversationId]) {
+                console.log("Found pending messages for this conversation:", pendingMessages[state.conversationId]);
+                
+                // Merge pending messages with current messages, avoiding duplicates
+                const currentMessageIds = new Set(state.messages.map((msg: any) => msg.id));
+                const newPendingMessages = pendingMessages[state.conversationId]?.filter(
+                    (msg: any) => !currentMessageIds.has(msg.id)
+                ) || [];
+                
+                if (newPendingMessages.length > 0) {
+                    console.log("Adding pending messages to current conversation:", newPendingMessages);
+                    setMessages(prev => [...prev, ...newPendingMessages]);
+                }
+            }
+        } else {
+            console.log("No messages in Redux state, fetching from API");
+            // If no messages in Redux state, fetch them from the API
+            if (state && state.conversationId) {
+                fetchMessages(state.conversationId);
+            }
         }
-    }, [state]);
+    }, [state, pendingMessages]);
+
+    const fetchMessages = async (conversationId: string) => {
+        try {
+            const response = await axios.get(`http://localhost:5173/api/getmessages/${conversationId}`);
+            const responseData = response.data as { success: boolean; data: any[] };
+            if (responseData && responseData.success) {
+                const messages = responseData.data || [];
+                console.log("Fetched messages from API:", messages);
+                setMessages(messages);
+            } else {
+                console.error("Invalid response format:", responseData);
+            }
+        } catch (error) {
+            console.error("Error fetching messages:", error);
+        }
+    };
+
     useEffect(() => {
         const handleReceiveMessage = (message: any) => {
             console.log("Received message:", message);
-            setMessages((prevMessages) => [...prevMessages, message]);
+            
+            // Store the message in pendingMessages for this conversation
+            setPendingMessages(prev => {
+                const conversationId = message.conversationId;
+                const existingMessages = prev[conversationId] || [];
+                
+                // Check if this message is already in the pending messages
+                const messageExists = existingMessages.some(msg => msg.id === message.id);
+                if (messageExists) {
+                    console.log("Message already exists in pending messages, not adding duplicate");
+                    return prev;
+                }
+                
+                console.log("Adding new message to pending messages for conversation:", conversationId);
+                return {
+                    ...prev,
+                    [conversationId]: [...existingMessages, message]
+                };
+            });
+            
+            // If this message is for the currently selected conversation, add it to the messages state
+            if (state && state.conversationId && message.conversationId === state.conversationId) {
+                // Check if the message already exists in the state to prevent duplicates
+                setMessages((prevMessages) => {
+                    // Check if this message is already in the state
+                    const messageExists = prevMessages.some(msg => msg.id === message.id);
+                    if (messageExists) {
+                        console.log("Message already exists in state, not adding duplicate");
+                        return prevMessages;
+                    }
+                    console.log("Adding new message to state");
+                    return [...prevMessages, message];
+                });
+            } else {
+                console.log("Message received for a different conversation:", message.conversationId);
+            }
         };
         const handleRevisedMessage = (message: any) => {
             console.log("Revised message:", message);
-            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== message.id));
+            if (state && state.conversationId && message.conversationId === state.conversationId) {
+                setMessages(prevMessages => prevMessages.filter(msg => msg.id !== message.id));
+            }
         }
         if (socket) {
             console.log("Socket is connected, listening for messages");
@@ -62,11 +151,23 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
             return () => {
                 console.log("Cleaning up socket listener");
                 socket.off('receive-Message', handleReceiveMessage);
-                socket.on('revised-Message', handleRevisedMessage);
-
+                socket.off('revised-Message', handleRevisedMessage);
             };
         }
-    }, [socket]);
+    }, [socket, state]);
+
+    useEffect(() => {
+        if (state && state.conversationId) {
+            console.log("Joining conversation room:", state.conversationId);
+            socket?.emit("join-conversation", { conversationId: state.conversationId });
+            
+            return () => {
+                console.log("Leaving conversation room:", state.conversationId);
+                socket?.emit("leave-conversation", { conversationId: state.conversationId });
+            };
+        }
+    }, [state?.conversationId, socket]);
+
     useEffect(() => {
         if (messageContainerRef.current) {
             messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
@@ -86,17 +187,49 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     }
     async function handleSubmit() {
         if (sendMessage && sendMessage.trim()) {
-            console.log(sendMessage);
+            console.log("Sending message:", sendMessage);
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+                console.error("User ID not found in localStorage");
+                return;
+            }
+            
+            if (!state || !state.conversationId) {
+                console.error("No conversation ID available");
+                return;
+            }
+            
+            if (!state.userId) {
+                console.error("No recipient ID available");
+                return;
+            }
+            
             const newMessage = {
                 conversationId: state.conversationId,
-                senderId: localStorage.getItem("id"),
+                senderId: userId,
                 body: sendMessage,
                 createdAt: new Date().toISOString(),
             };
-            console.log(socket?.id);
-            socket?.emit("new-message", { ...newMessage, socketId: socket.id, recieverId: state.userId })
-            setMessages(prevMessages => [...prevMessages, newMessage]);
+            
+            console.log("Socket ID:", socket?.id);
+            console.log("Sending to recipient:", state.userId);
+            
+            if (!socket) {
+                console.error("Socket not connected");
+                return;
+            }
+            
+            socket.emit("new-message", { 
+                ...newMessage, 
+                socketId: socket.id, 
+                recieverId: state.userId 
+            });
+            
+            // Clear the input field immediately for better UX
             setsendMessage("");
+            
+            // Don't add the message to state here - wait for the socket confirmation
+            // This prevents duplicate messages
         }
     }
     function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -122,13 +255,17 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
         setMenuVisible(false);
     };
     const handleDelete = async (id: string) => {
+        if (!state || !state.userId) {
+            console.error("No recipient ID available for message deletion");
+            return;
+        }
         socket?.emit('message-delete', { id: id, recieverId: state.userId });
         setMessages(prevMessages => prevMessages.filter(m => m.id !== id));
     }
     return (
-        <div className={`transition-all duration-300 ease-in-out  ${dark ? "dark bg-[#121212]" : "light"} ${close ? "w-[100%]" : "w-[70%]"} font-mono relative min-h-screen`}>
+        <div className={`transition-all duration-300 ease-in-out ${dark ? "dark bg-[#121212]" : "light"} ${close ? "w-[100%]" : "w-[70%]"} font-mono relative min-h-screen`}>
 
-            <div className="flex bg-gray-100 p-4 justify-between border-b-2  dark:border-gray-800 dark:bg-[#121212]">
+            <div className="flex bg-gray-100 p-4 justify-between border-b-2 dark:border-gray-800 dark:bg-[#121212]">
                 <div className=" flex gap-4 ">
                     <Avator name={state?.name} width={48} height={48} keys={state?.keys} isrequired={false} imageUrl={null} />
                     <div className="flex flex-col justify-center">
@@ -165,7 +302,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                             <div className="flex dark:bg-[#212121] flex-col pt-2 pb-3 bg-gray-200 pl-2 rounded-l-xl text-base"><IoMdLock /></div>
                             <h1 className="w-[34%] dark:bg-[#212121] pr-2 pb-2 pt-2 rounded-r-xl bg-gray-200 flex">{d.body}</h1>
                         </div> :
-                            d.senderId != localStorage.getItem("id") ?
+                            d.senderId != localStorage.getItem("userId") ?
                                 <div key={d.id} className="flex m-6" onContextMenu={handleContextMenu}>
                                     <RightClick
                                         x={menuPosition.x}

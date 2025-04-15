@@ -2,6 +2,7 @@ import Avator from '../../Components/Avator';
 import React from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation'; 
+import io from 'socket.io-client';
 
 
 interface NotificationCardProps {
@@ -13,37 +14,79 @@ interface NotificationData {
   username: string;
   bio: string;
   profilePic: string;
-} 
+}
+
+interface ApiResponse {
+  success: boolean;
+  conversationId?: string;
+  message?: string;
+  accepted?: boolean;
+}
 
 const NotificationCard: any= ({ notification }:NotificationCardProps) => {
   const router = useRouter();
   const handleAcceptSubmit = async() => {
     try {
-      const userId = localStorage.getItem('userId');
-      const response = await axios.post('http://localhost:5173/api/deleteReq', {
+      const response = await axios.post<ApiResponse>("http://localhost:5173/api/deleteReq", {
         reqComeId: notification.id,
-        userId: userId,
-        Accepted: false,
+        userId: localStorage.getItem("userId"),
+        accepted: true
       });
-  
-      if (response.data) {
-        router.push('/');
+      
+      console.log("Request accepted:", response.data);
+      
+      // Initialize socket connection
+      const socket = io("http://localhost:5173");
+      
+      // Join the conversation room if a conversation was created
+      if (response.data.conversationId) {
+        socket.emit("join-conversation", { conversationId: response.data.conversationId });
       }
+      
+      // Notify the other user that their request was accepted
+      socket.emit("request-accepted", {
+        receiverId: notification.id,
+        conversationId: response.data.conversationId
+      });
+      
+      // Disconnect socket after sending notifications
+      socket.disconnect();
+      
+      // Redirect to home page
+      router.push("/");
     } catch (error) {
-      console.error("Error deleting request:", error);
+      console.error("Error accepting request:", error);
     }
   };
+  
   const handleDeleteSubmit = async() => {
     try {
-      const userId=localStorage.getItem('userId');
-      const response=await axios.post('',{reqComeId:notification.id,userId:userId,Accepted:false});
-      console.log(response)
-   
+      const response = await axios.post<ApiResponse>("http://localhost:5173/api/deleteReq", {
+        reqComeId: notification.id,
+        userId: localStorage.getItem("userId"),
+        accepted: false
+      });
+      
+      console.log("Request rejected:", response.data);
+      
+      // Initialize socket connection
+      const socket = io("http://localhost:5173");
+      
+      // Notify the other user that their request was rejected
+      socket.emit("request-rejected", {
+        receiverId: notification.id
+      });
+      
+      // Disconnect socket after sending notifications
+      socket.disconnect();
+      
+      // Redirect to home page
+      router.push("/home");
     } catch (error) {
-      console.error("Error deleting request:", error);
-
+      console.error("Error rejecting request:", error);
     }
   };
+  
   return (
     <div className="flex items-center gap-2 justify-between p-4 bg-[#1a1a1a] rounded-lg text-white w-full max-w-sm">
       <Avator
@@ -57,15 +100,15 @@ const NotificationCard: any= ({ notification }:NotificationCardProps) => {
       
       <div className="flex-1">
         <p className="font-semibold">{notification.username}</p>
-        <p className="text-gray-400 text-sm">request to<br></br>follow you</p>
+        <p className="text-gray-400 text-sm">{notification.bio}</p>
       </div>
       
       <div className="flex gap-2">
         <button onClick={handleAcceptSubmit} className="bg-[#DB1A5A] text-white px-3 py-1 rounded font-medium hover:bg-[#B2164A]">
-          Confirm
+          Accept
         </button>
-        <button  onClick={handleDeleteSubmit}className="bg-gray-700 text-white px-3 py-1 rounded font-medium hover:bg-gray-800">
-          Delete
+        <button onClick={handleDeleteSubmit} className="bg-gray-700 text-white px-3 py-1 rounded font-medium hover:bg-gray-800">
+          Reject
         </button>
       </div>
     </div>

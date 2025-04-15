@@ -4,6 +4,7 @@ import Avator from './Avator';
 import axios from 'axios';
 import { useDispatch } from '@repo/redux/store';
 import { addtomainarea } from '@repo/redux/chatslices';
+import { io } from 'socket.io-client';
 
 function SearchCard({
   avatar,
@@ -28,20 +29,41 @@ function SearchCard({
 
   const handleclick = async () => {
     try {
-      const response:any = await axios.get(`http://localhost:5173/api/getmessages/${conversationId}`);
-      const messages = response.data?. data || [];
+      if (!conversationId || conversationId === "") {
+        console.log("No conversation ID available");
+        return;
+      }
+      
+      interface MessageResponse {
+        success: boolean;
+        data: any[];
+      }
+      
+      console.log(`Fetching messages for conversation: ${conversationId}`);
+      const response = await axios.get<MessageResponse>(`http://localhost:5173/api/getmessages/${conversationId}`);
+      
+      if (response.data && response.data.success) {
+        const messages = response.data.data || [];
 
-      const newdata = {
-        messages: messages,
-        avatar,
-        name,
-        keys,
-        conversationId,
-        userId,
-      };
+        const newdata = {
+          messages: messages,
+          avatar,
+          name,
+          keys,
+          conversationId,
+          userId,
+        };
 
-      console.log(newdata);
-      dispatch(addtomainarea(newdata));
+        console.log("Chat data loaded:", newdata);
+        dispatch(addtomainarea(newdata));
+        
+        // Reset unread count by emitting an event
+        const socket = io("http://localhost:5173");
+        socket.emit("conversation-opened", { conversationId });
+        socket.disconnect();
+      } else {
+        console.error("Invalid response format:", response.data);
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
     }

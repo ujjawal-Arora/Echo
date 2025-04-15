@@ -23,8 +23,9 @@ const SignIn = () => {
       const { token ,user}:any = response.data;
       if (token) {
         localStorage.setItem("token", token);
-        localStorage.setItem("id",user.id)
+        localStorage.setItem("userId",user.id)
         localStorage.setItem("email", email);
+        localStorage.setItem("username", user.username);
         console.log("Token stored in localStorage");
   
         // router.push("/userdetails");

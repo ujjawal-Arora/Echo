@@ -20,6 +20,18 @@ interface SearchBoxProps {
 
 const SearchBox: React.FC<SearchBoxProps> = ({ setclose, setData, data }) => {
   const [search, setSearch] = useState<string>("");
+  const [currentUsername, setCurrentUsername] = useState<string>("");
+
+  useEffect(() => {
+    // Get current user's username from localStorage
+    const username = localStorage.getItem('username');
+    if (username) {
+      setCurrentUsername(username);
+    } else {
+      // If username is not in localStorage, use a default
+      setCurrentUsername('User');
+    }
+  }, []);
 
   useEffect(() => {
     if (search.trim() === "") {
@@ -37,10 +49,10 @@ const SearchBox: React.FC<SearchBoxProps> = ({ setclose, setData, data }) => {
     <div>
       {/* Header */}
       <div className='flex justify-between ml-2'>
-        <div className='flex gap-4'>
-          <Avator name={"Aditya Verma"} width={48} height={48} keys={3} imageUrl={null} isrequired={false} />
-          <h1 className='text-lg font-semibold dark:text-white flex flex-col justify-center'>Ujjawal</h1>
-        </div>
+        <div className='flex gap-4 mb-14'>
+          {/* <Avator name={currentUsername} width={48} height={48} keys={3} imageUrl={null} isrequired={false} /> */}
+          {/* <h1 className='text-lg font-semibold dark:text-white flex flex-col justify-center'>{currentUsername}</h1> */}
+        </div> 
         <div className='flex flex-col justify-center text-xl dark:text-white cursor-pointer'>
           <div className='flex gap-4'>
             <BsThreeDots />

@@ -24,13 +24,29 @@ function SwipeCards() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userId=localStorage.getItem('userId');
-        const response = await axios.post('http://localhost:5173/api/sendUser',{userId:userId});
-        console.log(response)
-        setCards(response.data as CardData[]); // Assert response.data as CardData[]
-      } catch (err) {
-        setError('Failed to fetch user data');
-        console.error(err);
+        const userId = localStorage.getItem('userId');
+        if (!userId) {
+          setError('User ID not found. Please log in again.');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Fetching users with userId:', userId);
+        const response = await axios.post('http://localhost:5173/api/sendUser', {
+          userId: userId
+        });
+        
+        console.log('Response from server:', response.data);
+        if (Array.isArray(response.data)) {
+          setCards(response.data as CardData[]);
+        } else {
+          console.error('Unexpected response format:', response.data);
+          setError('Received invalid data format from server');
+        }
+      } catch (err: any) {
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch user data';
+        setError(errorMessage);
+        console.error('Error fetching users:', err);
       } finally {
         setLoading(false);
       }

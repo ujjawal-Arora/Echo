@@ -21,7 +21,6 @@ export default function Landing() {
         </div>
     );
 }
-
 function TopBar() {
     const router = useRouter();
 
@@ -52,7 +51,14 @@ function TopBar() {
                 >
                     SIGN UP
                 </button>
+                <button 
+                    onClick={() => router.push("/swipe")}
+                    className="bg-[#DB1A5A] p-2 border-2 border-[#DB1A5A] hover:bg-transparent hover:text-[#DB1A5A] text-gray-100 rounded-xl font-bold"
+                >
+                    FIND YOUR MATCH
+                </button>
             </div>
         </div>
     );
 }
+

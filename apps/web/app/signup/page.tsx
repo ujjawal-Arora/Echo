@@ -33,7 +33,8 @@ const SignUp = () => {
         // Store the token for further use, if needed
         
         localStorage.setItem('token', token);
-        localStorage.setItem('userId',userId)
+        localStorage.setItem('userId',userId);
+        localStorage.setItem('email',email);
 
 
         // Navigate to the user details page
