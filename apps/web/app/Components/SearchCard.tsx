@@ -1,10 +1,20 @@
 "use client";
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import Avator from './Avator';
 import axios from 'axios';
 import { useDispatch } from '@repo/redux/store';
 import { addtomainarea } from '@repo/redux/chatslices';
 import { io } from 'socket.io-client';
+
+interface MessageResponse {
+  success: boolean;
+  data: Array<{
+    id: string;
+    body: string;
+    createdAt: string;
+    senderId: string;
+  }>;
+}
 
 function SearchCard({
   avatar,
@@ -26,17 +36,33 @@ function SearchCard({
   userId: string;
 }) {
   const dispatch = useDispatch();
+  const [lastMessage, setLastMessage] = useState<string>("Start chatting!");
+
+  useEffect(() => {
+    const fetchLastMessage = async () => {
+      if (conversationId) {
+        try {
+          const response = await axios.get<MessageResponse>(`http://localhost:5173/api/getmessages/${conversationId}`);
+          if (response.data && response.data.success && response.data.data.length > 0) {
+            const messages = response.data.data;
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg) {
+              setLastMessage(lastMsg.body);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching last message:", error);
+        }
+      }
+    };
+    fetchLastMessage();
+  }, [conversationId]);
 
   const handleclick = async () => {
     try {
       if (!conversationId || conversationId === "") {
         console.log("No conversation ID available");
         return;
-      }
-      
-      interface MessageResponse {
-        success: boolean;
-        data: any[];
       }
       
       console.log(`Fetching messages for conversation: ${conversationId}`);
@@ -81,7 +107,7 @@ function SearchCard({
         <div className="flex justify-between items-start">
           <div>
             <div className="font-semibold text-md dark:text-white">{name}</div>
-            <div className="text-gray-600 text-sm dark:text-slate-200">{message}</div>
+            <div className="text-gray-600 text-sm dark:text-slate-200">{lastMessage}</div>
           </div>
           <div className="flex flex-col items-end text-gray-500 text-xs dark:text-gray-200">
             <span>{date}</span>

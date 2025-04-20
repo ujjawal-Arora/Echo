@@ -11,6 +11,7 @@ import { useState, KeyboardEvent, useEffect, Dispatch, SetStateAction ,useRef} f
 import { io, Socket } from 'socket.io-client';
 import { useDispatch, useSelector } from "@repo/redux/store";
 import { addDark, removedark } from "@repo/redux/themeslices";
+import { clearChatState } from "@repo/redux";
 import RightClick from './ChatRightClickContext';
 import axios from 'axios';
 
@@ -26,6 +27,15 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     const [socket, setsocket] = useState<Socket | null>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
 
+    // Only clear chat state when explicitly logging out, not on every mount
+    // This useEffect is now commented out to prevent clearing on refresh
+    /*
+    useEffect(() => {
+        dispatch(clearChatState());
+        setMessages([]);
+        setPendingMessages({});
+    }, [dispatch]);
+    */
 
     // useEffects here
     useEffect(() => {
@@ -295,35 +305,44 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
             </div>
             {/* chatting area */}
 
-            <div className="dark:bg-[#121212] overflow-auto max-h-[77vh]" onClick={handleCloseMenu} ref={messageContainerRef}>
-                {messages?.map((d: any) => {
-                    return (
-                        d.id == '1' ? <div className="flex text-[#DB1A5A] font-bold text-sm justify-center mt-4 text-center">
-                            <div className="flex dark:bg-[#212121] flex-col pt-2 pb-3 bg-gray-200 pl-2 rounded-l-xl text-base"><IoMdLock /></div>
-                            <h1 className="w-[34%] dark:bg-[#212121] pr-2 pb-2 pt-2 rounded-r-xl bg-gray-200 flex">{d.body}</h1>
-                        </div> :
-                            d.senderId != localStorage.getItem("userId") ?
-                                <div key={d.id} className="flex m-6" onContextMenu={handleContextMenu}>
-                                    <RightClick
-                                        x={menuPosition.x}
-                                        y={menuPosition.y}
-                                        visible={menuVisible}
-                                        onClose={() => handleDelete(d.id)} />
-                                    <div className="text-md dark:bg-neutral-700 bg-gray-300 text-black dark:text-white min-w-32 h-fit max-w-[40%] w-fit p-2 pl-4 pr-4 rounded-2xl rounded-bl-none">
-                                        <h1 className="break-words">{d.body}</h1>
-                                        <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
+            <div ref={messageContainerRef} className="flex flex-col h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
+                {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <div className="text-4xl mb-4">👋</div>
+                        <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">Start a Conversation</h2>
+                        <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+                            Send a message to begin chatting with {state?.name || 'your match'}
+                        </p>
+                    </div>
+                ) : (
+                    messages?.map((d: any) => {
+                        return (
+                            d.id == '1' ? <div className="flex text-[#DB1A5A] font-bold text-sm justify-center mt-4 text-center">
+                                <div className="flex dark:bg-[#212121] flex-col pt-2 pb-3 bg-gray-200 pl-2 rounded-l-xl text-base"><IoMdLock /></div>
+                                <h1 className="w-[34%] dark:bg-[#212121] pr-2 pb-2 pt-2 rounded-r-xl bg-gray-200 flex">{d.body}</h1>
+                            </div> :
+                                d.senderId != localStorage.getItem("userId") ?
+                                    <div key={d.id} className="flex m-6" onContextMenu={handleContextMenu}>
+                                        <RightClick
+                                            x={menuPosition.x}
+                                            y={menuPosition.y}
+                                            visible={menuVisible}
+                                            onClose={() => handleDelete(d.id)} />
+                                        <div className="text-md dark:bg-neutral-700 bg-gray-300 text-black dark:text-white min-w-32 h-fit max-w-[40%] w-fit p-2 pl-4 pr-4 rounded-2xl rounded-bl-none">
+                                            <h1 className="break-words">{d.body}</h1>
+                                            <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
 
-                                    </div>
+                                        </div>
 
-                                </div> : <div className="flex justify-end m-6" key={d.id}>
-                                    <div className="text-md bg-[#DB1A5A] max-w-[40%] p-2 pl-4 pr-4 rounded-2xl rounded-br-none min-w-32 text-white">
-                                        <h1 className="break-words">{d.body}</h1>
-                                        <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
+                                    </div> : <div className="flex justify-end m-6" key={d.id}>
+                                        <div className="text-md bg-[#DB1A5A] max-w-[40%] p-2 pl-4 pr-4 rounded-2xl rounded-br-none min-w-32 text-white">
+                                            <h1 className="break-words">{d.body}</h1>
+                                            <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
+                                        </div>
                                     </div>
-                                </div>
-                    );
-                })}
-                
+                        );
+                    })
+                )}
             </div>
 
             {/* Message  send */}

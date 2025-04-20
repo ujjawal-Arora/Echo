@@ -7,6 +7,8 @@ import Notification from "./components/Notification";
 import Footer from "../Components/Footer";
 import toast, { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
+import { useDispatch } from '@repo/redux/store';
+import { clearChatState } from '@repo/redux';
 
 export default function Landing() {
     return (
@@ -32,6 +34,7 @@ export default function Landing() {
 function TopBar() {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const dispatch = useDispatch();
 
     useEffect(() => {
         const userId = localStorage.getItem('userId');
@@ -50,6 +53,8 @@ function TopBar() {
     const handleLogout = () => {
         localStorage.removeItem('userId');
         localStorage.removeItem('username');
+        localStorage.removeItem('chatState');
+        dispatch(clearChatState());
         setIsLoggedIn(false);
         toast.success('Logged out successfully!');
         router.push('/landing');

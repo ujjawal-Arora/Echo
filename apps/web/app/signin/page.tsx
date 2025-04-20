@@ -28,7 +28,7 @@ const SignIn = () => {
         localStorage.setItem("email", email);
         localStorage.setItem("username", user.username);
         toast.success('Successfully signed in!', { id: loadingToast });
-        router.push("/userdetails");
+        router.push("/landing");
       } else {
         toast.error('Sign-in failed: No token returned.', { id: loadingToast });
       }

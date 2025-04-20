@@ -1,7 +1,7 @@
 {
   "name": "@repo/redux",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,7 +17,7 @@
     "./store": "./store/store.ts",
     "./actions": "./store/store.ts",
     "./chatslices":"./slices/chatslice.ts",
-    "./themeslices":"./slices/ThemeSlice.ts"
-
+    "./themeslices":"./slices/ThemeSlice.ts",
+    ".": "./index.ts"
   }
 }

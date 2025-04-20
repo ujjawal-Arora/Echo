@@ -34,8 +34,19 @@ const chatSlice=createSlice({
                 console.error("Error saving chat state to localStorage:", err);
             }
             return action.payload;
+        },
+        clearChatState: (state) => {
+            // Clear the state from localStorage
+            if (typeof window !== 'undefined') {
+                try {
+                    localStorage.removeItem('chatState');
+                } catch (err) {
+                    console.error("Error clearing chat state from localStorage:", err);
+                }
+            }
+            return null;
         }
     }
 })
-export const {addtomainarea} =chatSlice.actions;
+export const {addtomainarea, clearChatState} =chatSlice.actions;
 export default chatSlice.reducer;
