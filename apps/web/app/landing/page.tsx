@@ -57,7 +57,16 @@ function TopBar() {
         dispatch(clearChatState());
         setIsLoggedIn(false);
         toast.success('Logged out successfully!');
-        router.push('/landing');
+        router.push('/');
+    };
+
+    const handleChatClick = () => {
+        if (!isLoggedIn) {
+            toast.error('Please login first to access chat!');
+            router.push('/signin');
+            return;
+        }
+        router.push('/chat');
     };
 
     return (
@@ -71,7 +80,12 @@ function TopBar() {
                     <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">ABOUT</h1>
                     <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">PRICING</h1>
                     <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">EXPLORE</h1>
-                    <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">CHAT</h1>
+                    <h1 
+                        className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer"
+                        onClick={handleChatClick}
+                    >
+                        CHAT
+                    </h1>
                 </div>
             </div>
             <div className="flex items-center gap-4">
