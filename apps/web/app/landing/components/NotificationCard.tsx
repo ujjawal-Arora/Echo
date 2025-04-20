@@ -8,6 +8,8 @@ import toast, { Toaster } from 'react-hot-toast';
 
 interface NotificationCardProps {
   notification: NotificationData;
+  onReject?: (id: string) => void;
+  onAccept?: (id: string) => void;
 }
 
 interface NotificationData {
@@ -24,7 +26,7 @@ interface ApiResponse {
   accepted?: boolean;
 }
 
-const NotificationCard: any= ({ notification }:NotificationCardProps) => {
+const NotificationCard: any= ({ notification, onReject, onAccept }:NotificationCardProps) => {
   const router = useRouter();
   const handleAcceptSubmit = async() => {
     const loadingToast = toast.loading('Accepting request...');
@@ -55,8 +57,14 @@ const NotificationCard: any= ({ notification }:NotificationCardProps) => {
       socket.disconnect();
       
       toast.success('Request accepted successfully!', { id: loadingToast });
-      // Redirect to home page
-      router.push("/");
+      
+      // Call the onAccept callback to remove the notification from UI
+      if (onAccept) {
+        onAccept(notification.id);
+      }
+      
+      // Redirect to chat page
+      router.push("/chat");
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Error accepting request. Please try again.';
       toast.error(errorMessage, { id: loadingToast });
@@ -87,8 +95,14 @@ const NotificationCard: any= ({ notification }:NotificationCardProps) => {
       socket.disconnect();
       
       toast.success('Request rejected successfully!', { id: loadingToast });
-      // Redirect to home page
-      router.push("/home");
+      
+      // Call the onReject callback to remove the notification from UI
+      if (onReject) {
+        onReject(notification.id);
+      }
+      
+      // Redirect to landing page
+      router.push("/landing");
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Error rejecting request. Please try again.';
       toast.error(errorMessage, { id: loadingToast });

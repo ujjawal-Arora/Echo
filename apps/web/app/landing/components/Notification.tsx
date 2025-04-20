@@ -83,6 +83,14 @@ const Notification = () => {
     };
   }, []);
 
+  const handleReject = (id: string) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  };
+
+  const handleAccept = (id: string) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
+  };
+
   return (
     <div className="relative" ref={notificationRef}>
       <button
@@ -105,6 +113,8 @@ const Notification = () => {
                   <NotificationCard
                     key={notification.id}
                     notification={notification}
+                    onReject={handleReject}
+                    onAccept={handleAccept}
                   />
                 ))
               ) : (
