@@ -7,6 +7,9 @@ import { initializeSocket } from "./Socket/socket";
 const app = Express();
 const server = createServer(app);
 
+// // Get port from environment variable or use default
+const PORT = process.env.PORT || 5173;
+
 app.use(cors({ origin: "*" }));
 app.use(Express.json());
 app.use("/api", router);
@@ -14,6 +17,6 @@ app.use("/api", router);
 // Initialize Socket.io
 initializeSocket(server);
 
-server.listen(5173, () => {
-    console.log("Server started on port 5173");
+server.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
 });

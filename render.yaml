@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: echo-backend
+    env: node
+    buildCommand: cd apps/backend && npm install && npm run build
+    startCommand: cd apps/backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: API_BASE_URL
+        value: https://echo-backend.onrender.com/api
+      - key: DATABASE_URL
+        sync: false
+
+databases:
+  - name: echo-db
+    databaseName: echo
+    user: echo
+    plan: free 
