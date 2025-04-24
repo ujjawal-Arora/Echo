@@ -13,7 +13,6 @@
   "description": "",
   "dependencies": {
     "@repo/database": "*",
-    "@types/axios": "^0.9.36",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.7",
     "axios": "^1.7.7",
