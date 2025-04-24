@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createServer } from "http";
 import Express from "express";
 import router from "./routes/index";

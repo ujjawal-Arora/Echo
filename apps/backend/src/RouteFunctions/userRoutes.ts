@@ -4,8 +4,13 @@ import { client } from "@repo/database/client";
 import jwt ,{JwtPayload} from "jsonwebtoken";
 import { PrismaClient, Gender, relationType } from "@prisma/client";
 
-const JWT_SECRET = process.env.JWT_SECRET||"ujjawal";
+// Ensure JWT_SECRET is set
+if (!process.env.JWT_SECRET) {
+  console.error("JWT_SECRET is not set in environment variables");
+  process.exit(1);
+}
 
+const JWT_SECRET = process.env.JWT_SECRET;
 
 async function UserDetails(req: Request, res: any) {
     const userDetails = req.body;

@@ -3,7 +3,13 @@ import jwt ,{JwtPayload} from "jsonwebtoken";
 import { client } from "@repo/database/client";
 import { signUpvalidations, signInvalidations } from '../validations/validations';
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+// Ensure JWT_SECRET is set
+if (!process.env.JWT_SECRET) {
+  console.error("JWT_SECRET is not set in environment variables");
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 async function createUser({ username, password, email }: { username: string; password: string; email: string }) {
     return await client.user.create({

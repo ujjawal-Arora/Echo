@@ -2,7 +2,13 @@ import express, { Request, Response } from 'express';
 import { client } from '@repo/database/client'
 import jwt ,{JwtPayload} from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET||"ujjawal";
+// Ensure JWT_SECRET is set
+if (!process.env.JWT_SECRET) {
+  console.error("JWT_SECRET is not set in environment variables");
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 import { signUpvalidations, signInvalidations,userDetailsValidation } from '../validations/validations';
 
 const router = express.Router();
