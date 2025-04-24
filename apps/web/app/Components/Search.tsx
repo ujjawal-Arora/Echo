@@ -6,21 +6,29 @@ export default function Search({ conversationId }: { conversationId: string | un
     const [Messages, setMessages] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [userId, setUserId] = useState<string | null>(null);
+    const [isClient, setIsClient] = useState(false);
     
     console.log("conversation ID", Messages)
     
+    // Set isClient to true when component mounts (client-side only)
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+    
     useEffect(() => {
         // Get userId from localStorage only on the client side
-        const storedUserId = localStorage.getItem("userId");
-        setUserId(storedUserId);
-        
-        const fetchdata = async () => {
-            if (conversationId) {
-                const data: any = await axios.get(`http://localhost:5173/api/getmessages/${conversationId}`)
-                setMessages(data.data.filter((m: any) => m.id !== '1'));
+        if (typeof window !== 'undefined') {
+            const storedUserId = localStorage.getItem("userId");
+            setUserId(storedUserId);
+            
+            const fetchdata = async () => {
+                if (conversationId) {
+                    const data: any = await axios.get(`http://localhost:5173/api/getmessages/${conversationId}`)
+                    setMessages(data.data.filter((m: any) => m.id !== '1'));
+                }
             }
+            fetchdata();
         }
-        fetchdata();
     }, [conversationId])
     
     function formatISOToTime(isoString: string) {
@@ -50,7 +58,7 @@ export default function Search({ conversationId }: { conversationId: string | un
                 />
             </div>
             <div className='max-h-[80vh] overflow-auto transition-all ease-in-out duration-500 bg-gray-50 dark:bg-[#121212] rounded-2xl m-4'>
-                {filteredMessages.map((d: any) => (
+                {isClient && filteredMessages.map((d: any) => (
                     <div key={d.id} className={d.senderId !== userId ? "flex m-6" : "flex justify-end m-6"}>
                         <div className={`text-md ${d.senderId !== userId ? "dark:bg-neutral-700 bg-gray-300 text-black dark:text-white" : "bg-[#DB1A5A] text-white"} min-w-32 h-fit max-w-[40%] w-fit p-2 pl-4 pr-4 rounded-2xl rounded-bl-none`}>
                             {d.body}

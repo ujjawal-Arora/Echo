@@ -1,5 +1,10 @@
-import Lottie from "lottie-react";
+"use client";
+import dynamic from 'next/dynamic';
 import animationData from '../../Bin.json';
+
+// Dynamically import Lottie with no SSR
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+
 export default function RightClick({ x, y, visible, onClose }: { x: any, y: any, visible: boolean, onClose: any }) {
     return (
         <div
@@ -10,7 +15,7 @@ export default function RightClick({ x, y, visible, onClose }: { x: any, y: any,
             <div className="font-mono w-fit h-fit">
                 <div className="flex justify-center gap-2 bg-[#212121] p-2 pl-3 pr-3 rounded-lg hover:bg-[#151515] cursor-pointer border-2 border-[#212121]">
                     <div className="w-7 h-7 flex flex-col justify-center place-items-center">
-                        <Lottie animationData={animationData} />
+                        {typeof window !== 'undefined' && <Lottie animationData={animationData} />}
                     </div>
                     <h1 className="text-xl font-normal text-red-700 ">Delete</h1>
                 </div>

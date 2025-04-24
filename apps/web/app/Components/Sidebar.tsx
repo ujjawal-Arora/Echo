@@ -32,32 +32,42 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string>("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  // Set isClient to true when component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     // Get current user's username from localStorage
-    const username = localStorage.getItem('username');
-    if (username) {
-      setCurrentUsername(username);
-    } else {
-      // If username is not in localStorage, fetch it from the server
-      const userId = localStorage.getItem('userId');
-      if (userId) {
-        const fetchUsername = async () => {
-          try {
-            interface UserResponse {
-              username: string;
-              [key: string]: any;
+    if (typeof window !== 'undefined') {
+      const username = localStorage.getItem('username');
+      if (username) {
+        setCurrentUsername(username);
+      } else {
+        // If username is not in localStorage, fetch it from the server
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+          const fetchUsername = async () => {
+            try {
+              interface UserResponse {
+                username: string;
+                [key: string]: any;
+              }
+              
+              const response = await axios.get<UserResponse>(`http://localhost:5173/api/getuser/${userId}`);
+              if (response.data && response.data.username) {
+                setCurrentUsername(response.data.username);
+                localStorage.setItem('username', response.data.username);
+              }
+            } catch (error) {
+              console.error("Error fetching username:", error);
             }
-            const response = await axios.get<UserResponse>(`http://localhost:5173/api/user/${userId}`);
-            if (response.data && response.data.username) {
-              setCurrentUsername(response.data.username);
-              localStorage.setItem('username', response.data.username);
-            }
-          } catch (error) {
-            console.error("Error fetching username:", error);
-          }
-        };
-        fetchUsername();
+          };
+          
+          fetchUsername();
+        }
       }
     }
   }, []);
@@ -147,39 +157,14 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
   };
 
   return (
-    <div
-      className={`transition-all duration-300 ease-in-out ${close ? "w-[4%]" : "w-[30%]"} p-4 border-r-2 dark:border-gray-800 border-gray-200 h-screen font-mono dark:bg-[#121212]`}
-    >
-      {/* Close Icon */}
-      {close && (
-        <div className='cursor-pointer text-xl dark:text-white'>
-          <LuPanelRightClose onClick={() => setclose(false)} />
-        </div>
-      )}
-
-      {/* Search Box */}
-      <div className={`transition-all duration-300 ease-in-out ${close ? "opacity-0 invisible" : "opacity-100 visible"} fixed top-0 left-0 w-[30%] shadow-l z-20 p-4`}>
-        <SearchBox
-          setclose={setclose}
-          setData={setFilteredData}
-          data={filteredData}
-        />
-      </div>
-
-      {/* Current User Info */}
-      <div className={`mt-4 mb-4 ${close ? "opacity-0 invisible" : "opacity-100 visible"} transition-opacity duration-300 ease-in-out`}>
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold">
-            {currentUsername ? currentUsername.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <div className="font-semibold dark:text-white truncate max-w-[150px]">
-            {currentUsername || 'User'}
-          </div>
-        </div>
+    <div className={`bg-gray-100 dark:bg-[#121212] h-screen w-[30%] border-r-2 dark:border-gray-800 transition-all duration-300 ease-in-out ${close ? "w-0 overflow-hidden" : "w-[30%]"}`}>
+      <div className="flex justify-between p-4 border-b-2 dark:border-gray-800">
+        <h1 className="text-xl font-bold dark:text-white">Messages</h1>
+        <LuPanelRightClose className="text-2xl cursor-pointer dark:text-white" onClick={() => setclose(true)} />
       </div>
 
       {/* Notifications */}
-      {notifications.length > 0 && (
+      {isClient && notifications.length > 0 && (
         <div className="mb-4">
           <h3 className="text-lg font-semibold mb-2">Notifications</h3>
           {notifications.map((notification, index) => (
@@ -208,7 +193,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
 
       {/* User List */}
       <div className={`mt-[4rem] h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar ${close ? "opacity-0 invisible" : "opacity-100 visible"} transition-opacity duration-300 ease-in-out`}>
-        {(filteredData.length ? filteredData : data).map((user, index) => {
+        {isClient && (filteredData.length ? filteredData : data).map((user, index) => {
           // Create a conversation if one doesn't exist
           const createConversation = async () => {
             try {

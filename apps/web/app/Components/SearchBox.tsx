@@ -21,15 +21,23 @@ interface SearchBoxProps {
 const SearchBox: React.FC<SearchBoxProps> = ({ setclose, setData, data }) => {
   const [search, setSearch] = useState<string>("");
   const [currentUsername, setCurrentUsername] = useState<string>("");
+  const [isClient, setIsClient] = useState(false);
+
+  // Set isClient to true when component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     // Get current user's username from localStorage
-    const username = localStorage.getItem('username');
-    if (username) {
-      setCurrentUsername(username);
-    } else {
-      // If username is not in localStorage, use a default
-      setCurrentUsername('User');
+    if (typeof window !== 'undefined') {
+      const username = localStorage.getItem('username');
+      if (username) {
+        setCurrentUsername(username);
+      } else {
+        // If username is not in localStorage, use a default
+        setCurrentUsername('User');
+      }
     }
   }, []);
 

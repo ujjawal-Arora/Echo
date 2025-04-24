@@ -12,8 +12,11 @@ import { io, Socket } from 'socket.io-client';
 import { useDispatch, useSelector } from "@repo/redux/store";
 import { addDark, removedark } from "@repo/redux/themeslices";
 import { clearChatState } from "@repo/redux";
-import RightClick from './ChatRightClickContext';
+import dynamic from 'next/dynamic';
 import axios from 'axios';
+
+// Dynamically import RightClick with no SSR
+const RightClick = dynamic(() => import('./ChatRightClickContext'), { ssr: false });
 
 export default function MainPart({ close, setshowsearch, showsearch, setOnline }: { close: boolean, setshowsearch: Dispatch<SetStateAction<string | null>>, showsearch: string|null, setOnline: Dispatch<SetStateAction<boolean>> }) {
     const [messages, setMessages] = useState<any[]>([]);
@@ -27,6 +30,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     const [socket, setsocket] = useState<Socket | null>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
     const [userId, setUserId] = useState<string | null>(null);
+    const [isClient, setIsClient] = useState(false);
 
     // Only clear chat state when explicitly logging out, not on every mount
     // This useEffect is now commented out to prevent clearing on refresh
@@ -38,36 +42,45 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     }, [dispatch]);
     */
 
+    // Set isClient to true when component mounts (client-side only)
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     // Get userId from localStorage only on the client side
     useEffect(() => {
-        const storedUserId = localStorage.getItem("userId");
-        setUserId(storedUserId);
+        if (typeof window !== 'undefined') {
+            const storedUserId = localStorage.getItem("userId");
+            setUserId(storedUserId);
+        }
     }, []);
 
     // useEffects here
     useEffect(() => {
-        const newsocket = io("http://localhost:5173");
-        setsocket(newsocket);
-        newsocket.on("connect", () => {
-            const userId = localStorage.getItem("userId");
-            if (!userId) {
-                console.error("User ID not found in localStorage");
-                return;
-            }
-            newsocket.emit("connectUser", { userId: userId, socketId: newsocket.id })
-            console.log("Connected:", newsocket.id);
-            setOnline(true);
-        });
+        if (typeof window !== 'undefined') {
+            const newsocket = io("http://localhost:5173");
+            setsocket(newsocket);
+            newsocket.on("connect", () => {
+                const userId = localStorage.getItem("userId");
+                if (!userId) {
+                    console.error("User ID not found in localStorage");
+                    return;
+                }
+                newsocket.emit("connectUser", { userId: userId, socketId: newsocket.id })
+                console.log("Connected:", newsocket.id);
+                setOnline(true);
+            });
 
-        // Add a listener for connection errors
-        newsocket.on("connect_error", (error) => {
-            console.error("Socket connection error:", error);
-        });
+            // Add a listener for connection errors
+            newsocket.on("connect_error", (error) => {
+                console.error("Socket connection error:", error);
+            });
 
-        return () => {
-            newsocket.disconnect();
-            setOnline(false);
-        };
+            return () => {
+                newsocket.disconnect();
+                setOnline(false);
+            };
+        }
     }, []);
 
     useEffect(() => {
@@ -330,11 +343,11 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                             </div> :
                                 d.senderId != userId ?
                                     <div key={d.id} className="flex m-6" onContextMenu={handleContextMenu}>
-                                        <RightClick
+                                        {isClient && <RightClick
                                             x={menuPosition.x}
                                             y={menuPosition.y}
                                             visible={menuVisible}
-                                            onClose={() => handleDelete(d.id)} />
+                                            onClose={() => handleDelete(d.id)} />}
                                         <div className="text-md dark:bg-neutral-700 bg-gray-300 text-black dark:text-white min-w-32 h-fit max-w-[40%] w-fit p-2 pl-4 pr-4 rounded-2xl rounded-bl-none">
                                             <h1 className="break-words">{d.body}</h1>
                                             <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
