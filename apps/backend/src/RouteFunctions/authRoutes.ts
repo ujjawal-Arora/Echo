@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import jwt ,{JwtPayload} from "jsonwebtoken";
 import { client } from "@repo/database/client";
 import { signUpvalidations, signInvalidations } from '../validations/validations';
+import { PrismaClient } from "@prisma/client";
 
 // Ensure JWT_SECRET is set
 if (!process.env.JWT_SECRET) {
