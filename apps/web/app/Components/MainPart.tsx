@@ -26,6 +26,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const [socket, setsocket] = useState<Socket | null>(null);
     const messageContainerRef = useRef<HTMLDivElement>(null);
+    const [userId, setUserId] = useState<string | null>(null);
 
     // Only clear chat state when explicitly logging out, not on every mount
     // This useEffect is now commented out to prevent clearing on refresh
@@ -36,6 +37,12 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
         setPendingMessages({});
     }, [dispatch]);
     */
+
+    // Get userId from localStorage only on the client side
+    useEffect(() => {
+        const storedUserId = localStorage.getItem("userId");
+        setUserId(storedUserId);
+    }, []);
 
     // useEffects here
     useEffect(() => {
@@ -321,7 +328,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                                 <div className="flex dark:bg-[#212121] flex-col pt-2 pb-3 bg-gray-200 pl-2 rounded-l-xl text-base"><IoMdLock /></div>
                                 <h1 className="w-[34%] dark:bg-[#212121] pr-2 pb-2 pt-2 rounded-r-xl bg-gray-200 flex">{d.body}</h1>
                             </div> :
-                                d.senderId != localStorage.getItem("userId") ?
+                                d.senderId != userId ?
                                     <div key={d.id} className="flex m-6" onContextMenu={handleContextMenu}>
                                         <RightClick
                                             x={menuPosition.x}

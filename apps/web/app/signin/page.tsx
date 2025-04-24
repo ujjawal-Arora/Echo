@@ -5,9 +5,12 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation'; 
 import { FaGoogle, FaGithub, FaHeart, FaEnvelope, FaLock } from 'react-icons/fa'; 
 import toast, { Toaster } from 'react-hot-toast';
+import { useDispatch } from "@repo/redux/store";
+import { clearChatState } from "@repo/redux";
 
 const SignIn = () => {
   const router = useRouter(); 
+  const dispatch = useDispatch();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +26,10 @@ const SignIn = () => {
   
       const { token, user }: any = response.data;
       if (token) {
+        // Clear any existing chat state before setting new user data
+        dispatch(clearChatState());
+        localStorage.removeItem('chatState');
+        
         localStorage.setItem("token", token);
         localStorage.setItem("userId", user.id);
         localStorage.setItem("email", email);
