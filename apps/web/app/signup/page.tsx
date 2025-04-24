@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import { useDispatch } from "@repo/redux/store";
 import { clearChatState } from "@repo/redux";
+import { config } from '../config';
 
 const SignUp = () => {
   const router = useRouter();
@@ -28,7 +29,7 @@ const SignUp = () => {
     };
   
     try {
-      const response = await axios.post('http://localhost:5173/api/signup', payload); 
+      const response = await axios.post(`${config.apiBaseUrl}/signup`, payload); 
       console.log('User signed up successfully:', response.data);
       const data = response.data as { token: string; message: string; user: any };
       const token = data.token;

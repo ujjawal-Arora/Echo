@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import axios from 'axios';
+import { config } from '../config';
+
 export default function Search({ conversationId }: { conversationId: string | undefined }) {
     const [Messages, setMessages] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -23,7 +25,7 @@ export default function Search({ conversationId }: { conversationId: string | un
             
             const fetchdata = async () => {
                 if (conversationId) {
-                    const data: any = await axios.get(`http://localhost:5173/api/getmessages/${conversationId}`)
+                    const data: any = await axios.get(`${config.apiBaseUrl}/getmessages/${conversationId}`)
                     setMessages(data.data.filter((m: any) => m.id !== '1'));
                 }
             }

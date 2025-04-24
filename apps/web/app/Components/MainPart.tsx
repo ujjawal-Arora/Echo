@@ -14,6 +14,7 @@ import { addDark, removedark } from "@repo/redux/themeslices";
 import { clearChatState } from "@repo/redux";
 import dynamic from 'next/dynamic';
 import axios from 'axios';
+import { config } from '../config';
 
 // Dynamically import RightClick with no SSR
 const RightClick = dynamic(() => import('./ChatRightClickContext'), { ssr: false });
@@ -58,7 +59,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     // useEffects here
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const newsocket = io("http://localhost:5173");
+            const newsocket = io(config.apiBaseUrl.replace('/api', ''));
             setsocket(newsocket);
             newsocket.on("connect", () => {
                 const userId = localStorage.getItem("userId");
@@ -114,7 +115,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
 
     const fetchMessages = async (conversationId: string) => {
         try {
-            const response = await axios.get(`http://localhost:5173/api/getmessages/${conversationId}`);
+            const response = await axios.get(`${config.apiBaseUrl}/getmessages/${conversationId}`);
             const responseData = response.data as { success: boolean; data: any[] };
             if (responseData && responseData.success) {
                 const messages = responseData.data || [];

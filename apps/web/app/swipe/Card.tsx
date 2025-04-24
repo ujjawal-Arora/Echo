@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import axios from 'axios';
 import { AiOutlineLeft, AiOutlineRight } from 'react-icons/ai'
 import toast, { Toaster } from 'react-hot-toast';
+import { config } from '../config';
 
 interface CardProps {
   card: {
@@ -82,14 +83,14 @@ const Card = ({ card, onSwipe }: CardProps) => {
       const userId = localStorage.getItem('userId');
       
       // Send friendship request to the backend
-      const response = await axios.post('http://localhost:5173/api/sendreq', { 
+      const response = await axios.post(`${config.apiBaseUrl}/sendreq`, { 
         senderId: userId,
         receiverId: card.id
       });
       console.log("Swiped right:", (response.data as { message: string }).message);
       
       // Emit socket event for right-swipe notification
-      const socket = io("http://localhost:5173");
+      const socket = io(config.apiBaseUrl.replace('/api', ''));
       socket.emit("right-swipe", {
         senderId: userId,
         receiverId: card.id

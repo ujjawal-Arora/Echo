@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation'; 
 import io from 'socket.io-client';
 import toast, { Toaster } from 'react-hot-toast';
+import { config } from '../../config';
 
 
 interface NotificationCardProps {
@@ -31,7 +32,7 @@ const NotificationCard: any= ({ notification, onReject, onAccept }:NotificationC
   const handleAcceptSubmit = async() => {
     const loadingToast = toast.loading('Accepting request...');
     try {
-      const response = await axios.post<ApiResponse>("http://localhost:5173/api/deleteReq", {
+      const response = await axios.post<ApiResponse>(`${config.apiBaseUrl}/deleteReq`, {
         reqComeId: notification.id,
         userId: localStorage.getItem("userId"),
         accepted: true
@@ -40,7 +41,7 @@ const NotificationCard: any= ({ notification, onReject, onAccept }:NotificationC
       console.log("Request accepted:", response.data);
       
       // Initialize socket connection
-      const socket = io("http://localhost:5173");
+      const socket = io(config.apiBaseUrl.replace('/api', ''));
       
       // Join the conversation room if a conversation was created
       if (response.data.conversationId) {
@@ -75,7 +76,7 @@ const NotificationCard: any= ({ notification, onReject, onAccept }:NotificationC
   const handleDeleteSubmit = async() => {
     const loadingToast = toast.loading('Rejecting request...');
     try {
-      const response = await axios.post<ApiResponse>("http://localhost:5173/api/deleteReq", {
+      const response = await axios.post<ApiResponse>(`${config.apiBaseUrl}/deleteReq`, {
         reqComeId: notification.id,
         userId: localStorage.getItem("userId"),
         accepted: false
@@ -84,7 +85,7 @@ const NotificationCard: any= ({ notification, onReject, onAccept }:NotificationC
       console.log("Request rejected:", response.data);
       
       // Initialize socket connection
-      const socket = io("http://localhost:5173");
+      const socket = io(config.apiBaseUrl.replace('/api', ''));
       
       // Notify the other user that their request was rejected
       socket.emit("request-rejected", {

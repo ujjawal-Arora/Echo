@@ -1,5 +1,7 @@
 import { Server } from "socket.io";
+import { Server as HttpServer } from "http";
 import axios from "axios";
+import { config } from '../config';
 
 const appusers = new Map<string, string>();
 
@@ -51,7 +53,7 @@ export const initializeSocket = (server: any) => {
             console.log("Receiver ID reached:", recieverId);
             try {
                 const response: any = await axios.delete(
-                    `http://localhost:5173/api/deleteMessage/${id}`
+                    `${config.baseUrl}/api/deleteMessage/${id}`
                 );
 
                 const recipientSocketId = appusers.get(recieverId);
@@ -78,7 +80,7 @@ export const initializeSocket = (server: any) => {
             try {
                 console.log("Received new message:", { conversationId, senderId, body, socketId, recieverId });
                 
-                const response: any = await axios.post("http://localhost:5173/api/addconvp", {
+                const response: any = await axios.post(`${config.baseUrl}/api/addconvp`, {
                     conversationId,
                     senderId,
                     body,
@@ -137,7 +139,7 @@ export const initializeSocket = (server: any) => {
                 const { senderId, receiverId } = data;
                 
                 // Get sender's details
-                const senderResponse = await axios.get<UserResponse>(`http://localhost:5173/api/user/${senderId}`);
+                const senderResponse = await axios.get<UserResponse>(`${config.baseUrl}/api/user/${senderId}`);
                 if (!senderResponse.data.success) {
                     console.error('Failed to fetch sender details');
                     return;

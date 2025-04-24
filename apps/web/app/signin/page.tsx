@@ -7,6 +7,7 @@ import { FaGoogle, FaGithub, FaHeart, FaEnvelope, FaLock } from 'react-icons/fa'
 import toast, { Toaster } from 'react-hot-toast';
 import { useDispatch } from "@repo/redux/store";
 import { clearChatState } from "@repo/redux";
+import { config } from '../config';
 
 const SignIn = () => {
   const router = useRouter(); 
@@ -19,7 +20,7 @@ const SignIn = () => {
     const loadingToast = toast.loading('Signing in...');
   
     try {
-      const response = await axios.post("http://localhost:5173/api/signin", {
+      const response = await axios.post(`${config.apiBaseUrl}/signin`, {
         email,  
         password,
       });

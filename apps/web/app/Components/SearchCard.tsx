@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useDispatch } from '@repo/redux/store';
 import { addtomainarea } from '@repo/redux/chatslices';
 import { io } from 'socket.io-client';
+import { config } from '../config';
 
 interface MessageResponse {
   success: boolean;
@@ -42,7 +43,7 @@ function SearchCard({
     const fetchLastMessage = async () => {
       if (conversationId) {
         try {
-          const response = await axios.get<MessageResponse>(`http://localhost:5173/api/getmessages/${conversationId}`);
+          const response = await axios.get<MessageResponse>(`${config.apiBaseUrl}/getmessages/${conversationId}`);
           if (response.data && response.data.success && response.data.data.length > 0) {
             const messages = response.data.data;
             const lastMsg = messages[messages.length - 1];
@@ -66,7 +67,7 @@ function SearchCard({
       }
       
       console.log(`Fetching messages for conversation: ${conversationId}`);
-      const response = await axios.get<MessageResponse>(`http://localhost:5173/api/getmessages/${conversationId}`);
+      const response = await axios.get<MessageResponse>(`${config.apiBaseUrl}/getmessages/${conversationId}`);
       
       if (response.data && response.data.success) {
         const messages = response.data.data || [];
@@ -84,7 +85,7 @@ function SearchCard({
         dispatch(addtomainarea(newdata));
         
         // Reset unread count by emitting an event
-        const socket = io("http://localhost:5173");
+        const socket = io(config.apiBaseUrl.replace('/api', ''));
         socket.emit("conversation-opened", { conversationId });
         socket.disconnect();
       } else {

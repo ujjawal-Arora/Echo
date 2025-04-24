@@ -4,6 +4,7 @@ import { Bell } from 'lucide-react';
 import axios from 'axios';
 import io from 'socket.io-client';
 import NotificationCard from './NotificationCard';
+import { config } from '../../config';
 
 interface NotificationData {
   id: string;
@@ -33,7 +34,7 @@ const Notification = () => {
       const userId = localStorage.getItem('userId');
       if (!userId) return;
 
-      const response = await axios.post<ApiResponse>('http://localhost:5173/api/requestdata', {
+      const response = await axios.post<ApiResponse>(`${config.apiBaseUrl}/requestdata`, {
         userId: userId
       });
 
@@ -48,7 +49,7 @@ const Notification = () => {
   useEffect(() => {
     fetchNotifications();
 
-    const socket = io('http://localhost:5173');
+    const socket = io(config.apiBaseUrl.replace('/api', ''));
     const userId = localStorage.getItem('userId');
 
     if (userId) {

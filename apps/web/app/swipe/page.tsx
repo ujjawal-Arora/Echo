@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Card from "./Card";
+import { config } from '../config';
 
 interface CardData {
   id: number;
@@ -32,7 +33,7 @@ function SwipeCards() {
         }
   
         console.log("Fetching users with userId:", userId);
-        const response = await axios.post("http://localhost:5173/api/sendUser", {
+        const response = await axios.post(`${config.apiBaseUrl}/sendUser`, {
           userId: userId,
         });
   

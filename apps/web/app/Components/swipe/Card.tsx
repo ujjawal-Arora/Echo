@@ -1,5 +1,6 @@
 import { io } from "socket.io-client";
 import axios from "axios";
+import { config } from '../../config';
 
 interface User {
   id: string;
@@ -19,7 +20,7 @@ const handleSwipeRight = async (user: User) => {
         }
 
         // Initialize socket
-        const socket = io("http://localhost:5173");
+        const socket = io(config.apiBaseUrl.replace('/api', ''));
 
         // Emit right-swipe event
         socket.emit("right-swipe", {
@@ -28,7 +29,7 @@ const handleSwipeRight = async (user: User) => {
         });
 
         // Send friendship request
-        const response = await axios.post<ApiResponse>("http://localhost:5173/api/sendreq", {
+        const response = await axios.post<ApiResponse>(`${config.apiBaseUrl}/sendreq`, {
             senderId: userId,
             receiverId: user.id
         });

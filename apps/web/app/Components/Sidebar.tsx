@@ -6,6 +6,7 @@ import axios from 'axios';
 import SearchBox from './SearchBox';
 import SearchCard from './SearchCard';
 import { io, Socket } from 'socket.io-client';
+import { config } from '../config';
 
 interface Conversation {
   id: string;
@@ -56,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
                 [key: string]: any;
               }
               
-              const response = await axios.get<UserResponse>(`http://localhost:5173/api/getuser/${userId}`);
+              const response = await axios.get<UserResponse>(`${config.apiBaseUrl}/getuser/${userId}`);
               if (response.data && response.data.username) {
                 setCurrentUsername(response.data.username);
                 localStorage.setItem('username', response.data.username);
@@ -74,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
 
   useEffect(() => {
     // Initialize socket connection
-    const newSocket = io("http://localhost:5173");
+    const newSocket = io(config.apiBaseUrl.replace('/api', ''));
     setSocket(newSocket);
     
     newSocket.on("connect", () => {
@@ -136,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
         return;
       }
 
-      const response = await axios.get<Conversation[]>(`http://localhost:5173/api/get-accepted/${userId}`);
+      const response = await axios.get<Conversation[]>(`${config.apiBaseUrl}/get-accepted/${userId}`);
       console.log("✅ Conversations fetched:", response.data);
       console.log("First conversation:", response.data[0]);
       console.log("Conversation IDs:", response.data[0]?.conversationIds);
@@ -154,6 +155,41 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
 
   const removeNotification = (index: number) => {
     setNotifications(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleLinkUsers = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        console.warn("User ID not found in localStorage.");
+        return;
+      }
+      
+      // Check if we already have a conversation with this user
+      const existingConversation = data.find(u => 
+        u.id === userId && u.conversationIds && u.conversationIds.length > 0
+      );
+      
+      if (existingConversation) {
+        console.log("Conversation already exists for:", userId);
+        return;
+      }
+      
+      console.log("Creating conversation for:", userId);
+      const response = await axios.post(`${config.apiBaseUrl}/linkusers`, {
+        userId1: userId,
+        userId2: userId
+      });
+      
+      console.log("Created conversation:", response.data);
+      
+      // Refresh the conversations list
+      const updatedResponse = await axios.get<Conversation[]>(`${config.apiBaseUrl}/get-accepted/${userId}`);
+      setData(updatedResponse.data);
+      setFilteredData(updatedResponse.data);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+    }
   };
 
   return (
@@ -214,7 +250,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
               }
               
               console.log("Creating conversation for:", user.username);
-              const response = await axios.post('http://localhost:5173/api/linkusers', {
+              const response = await axios.post(`${config.apiBaseUrl}/linkusers`, {
                 userId1: userId,
                 userId2: user.id
               });
@@ -222,7 +258,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
               console.log("Created conversation:", response.data);
               
               // Refresh the conversations list
-              const updatedResponse = await axios.get<Conversation[]>(`http://localhost:5173/api/get-accepted/${userId}`);
+              const updatedResponse = await axios.get<Conversation[]>(`${config.apiBaseUrl}/get-accepted/${userId}`);
               setData(updatedResponse.data);
               setFilteredData(updatedResponse.data);
             } catch (error) {
