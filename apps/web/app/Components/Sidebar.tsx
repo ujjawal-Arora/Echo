@@ -193,100 +193,109 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
   };
 
   return (
-    <div className={`bg-gray-100 dark:bg-[#121212] h-screen w-[30%] border-r-2 dark:border-gray-800 transition-all duration-300 ease-in-out ${close ? "w-0 overflow-hidden" : "w-[30%]"}`}>
-      <div className="flex justify-between p-4 border-b-2 dark:border-gray-800">
-        <h1 className="text-xl font-bold dark:text-white">Messages</h1>
-        <LuPanelRightClose className="text-2xl cursor-pointer dark:text-white" onClick={() => setclose(true)} />
-      </div>
-
-      {/* Notifications */}
-      {isClient && notifications.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Notifications</h3>
-          {notifications.map((notification, index) => (
-            <div key={index} className="bg-white p-3 rounded-lg shadow mb-2 flex items-center justify-between">
-              <div className="flex items-center">
-                <img 
-                  src={notification.senderProfilePic || '/default-avatar.png'} 
-                  alt={notification.senderUsername}
-                  className="w-10 h-10 rounded-full mr-3"
-                />
-                <div>
-                  <p className="font-medium">{notification.senderUsername}</p>
-                  <p className="text-sm text-gray-500">Swiped right on you!</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => removeNotification(index)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+    <>
+      <div className={`bg-gray-100 dark:bg-[#121212] h-screen border-r-2 dark:border-gray-800 transition-all duration-300 ease-in-out ${close ? "w-0 opacity-0" : "w-[30%] opacity-100"}`}>
+        <div className={`flex justify-between p-4 border-b-2 dark:border-gray-800 ${close ? "hidden" : "flex"}`}>
+          <h1 className="text-xl font-bold dark:text-white">Messages</h1>
+          <LuPanelRightClose className="text-2xl cursor-pointer dark:text-white hover:text-gray-400" onClick={() => setclose(true)} />
         </div>
-      )}
+        {/* Notifications */}
+        {isClient && notifications.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-2">Notifications</h3>
+            {notifications.map((notification, index) => (
+              <div key={index} className="bg-white p-3 rounded-lg shadow mb-2 flex items-center justify-between">
+                <div className="flex items-center">
+                  <img 
+                    src={notification.senderProfilePic || '/default-avatar.png'} 
+                    alt={notification.senderUsername}
+                    className="w-10 h-10 rounded-full mr-3"
+                  />
+                  <div>
+                    <p className="font-medium">{notification.senderUsername}</p>
+                    <p className="text-sm text-gray-500">Swiped right on you!</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => removeNotification(index)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* User List */}
-      <div className={`mt-[4rem] h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar ${close ? "opacity-0 invisible" : "opacity-100 visible"} transition-opacity duration-300 ease-in-out`}>
-        {isClient && (filteredData.length ? filteredData : data).map((user, index) => {
-          // Create a conversation if one doesn't exist
-          const createConversation = async () => {
-            try {
-              const userId = localStorage.getItem('userId');
-              if (!userId) {
-                console.warn("User ID not found in localStorage.");
-                return;
+        {/* User List */}
+        <div className={`mt-[4rem] h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar ${close ? "opacity-0 invisible" : "opacity-100 visible"} transition-opacity duration-300 ease-in-out`}>
+          {isClient && (filteredData.length ? filteredData : data).map((user, index) => {
+            // Create a conversation if one doesn't exist
+            const createConversation = async () => {
+              try {
+                const userId = localStorage.getItem('userId');
+                if (!userId) {
+                  console.warn("User ID not found in localStorage.");
+                  return;
+                }
+                
+                // Check if we already have a conversation with this user
+                const existingConversation = data.find(u => 
+                  u.id === user.id && u.conversationIds && u.conversationIds.length > 0
+                );
+                
+                if (existingConversation) {
+                  console.log("Conversation already exists for:", user.username);
+                  return;
+                }
+                
+                console.log("Creating conversation for:", user.username);
+                const response = await axios.post(`${config.apiBaseUrl}/linkusers`, {
+                  userId1: userId,
+                  userId2: user.id
+                });
+                
+                console.log("Created conversation:", response.data);
+                
+                // Refresh the conversations list
+                const updatedResponse = await axios.get<Conversation[]>(`${config.apiBaseUrl}/get-accepted/${userId}`);
+                setData(updatedResponse.data);
+                setFilteredData(updatedResponse.data);
+              } catch (error) {
+                console.error("Error creating conversation:", error);
               }
-              
-              // Check if we already have a conversation with this user
-              const existingConversation = data.find(u => 
-                u.id === user.id && u.conversationIds && u.conversationIds.length > 0
-              );
-              
-              if (existingConversation) {
-                console.log("Conversation already exists for:", user.username);
-                return;
-              }
-              
-              console.log("Creating conversation for:", user.username);
-              const response = await axios.post(`${config.apiBaseUrl}/linkusers`, {
-                userId1: userId,
-                userId2: user.id
-              });
-              
-              console.log("Created conversation:", response.data);
-              
-              // Refresh the conversations list
-              const updatedResponse = await axios.get<Conversation[]>(`${config.apiBaseUrl}/get-accepted/${userId}`);
-              setData(updatedResponse.data);
-              setFilteredData(updatedResponse.data);
-            } catch (error) {
-              console.error("Error creating conversation:", error);
+            };
+            
+            // If no conversation exists, create one
+            if (!user.conversationIds || user.conversationIds.length === 0) {
+              createConversation();
             }
-          };
-          
-          // If no conversation exists, create one
-          if (!user.conversationIds || user.conversationIds.length === 0) {
-            createConversation();
-          }
-          
-          return (
-            <SearchCard
-              key={user.id}
-              keys={index}
-              avatar={null}
-              count={user.conversationIds?.[0] ? (unreadCounts[user.conversationIds[0]] || 0) : 0}
-              message={"Start chatting!"}
-              name={user.username}
-              date={"Sep 15"}
-              conversationId={user.conversationIds?.[0] || ""}
-              userId={user.id}
-            />
-          );
-        })}
+            
+            return (
+              <SearchCard
+                key={user.id}
+                keys={index}
+                avatar={null}
+                count={user.conversationIds?.[0] ? (unreadCounts[user.conversationIds[0]] || 0) : 0}
+                message={"Start chatting!"}
+                name={user.username}
+                date={"Sep 15"}
+                conversationId={user.conversationIds?.[0] || ""}
+                userId={user.id}
+              />
+            );
+          })}
+        </div>
       </div>
-    </div>
+      {close && (
+        <button 
+          onClick={() => setclose(false)}
+          className="fixed left-0 top-1/2 transform -translate-y-1/2 bg-gray-100 dark:bg-[#121212] p-2 rounded-r-lg border-r-2 border-t-2 border-b-2 dark:border-gray-800 shadow-md hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors z-50"
+        >
+          <LuPanelRightClose className="text-2xl cursor-pointer dark:text-white rotate-180" />
+        </button>
+      )}
+    </>
   );
 };
 
