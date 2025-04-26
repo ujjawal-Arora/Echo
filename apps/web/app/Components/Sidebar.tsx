@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LuPanelRightClose } from "react-icons/lu";
+import { FaSearch } from "react-icons/fa";
 import axios from 'axios';
 import SearchBox from './SearchBox';
 import SearchCard from './SearchCard';
@@ -34,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
   const [currentUsername, setCurrentUsername] = useState<string>("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Set isClient to true when component mounts (client-side only)
   useEffect(() => {
@@ -192,6 +194,18 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
     }
   };
 
+  // Add search functionality
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredData(data);
+    } else {
+      const filtered = data.filter(user => 
+        user.username.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredData(filtered);
+    }
+  }, [searchQuery, data]);
+
   return (
     <>
       <div className={`bg-gray-100 dark:bg-[#121212] h-screen border-r-2 dark:border-gray-800 transition-all duration-300 ease-in-out ${close ? "w-0 opacity-0" : "w-[30%] opacity-100"}`}>
@@ -199,6 +213,23 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
           <h1 className="text-xl font-bold dark:text-white">Messages</h1>
           <LuPanelRightClose className="text-2xl cursor-pointer dark:text-white hover:text-gray-400" onClick={() => setclose(true)} />
         </div>
+        
+        {/* Search Box */}
+        <div className={`p-4 ${close ? "hidden" : "block"}`}>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <FaSearch className="text-gray-500 dark:text-gray-400" />
+            </div>
+            <input
+              type="text"
+              className="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+        
         {/* Notifications */}
         {isClient && notifications.length > 0 && (
           <div className="mb-4">
@@ -228,7 +259,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
         )}
 
         {/* User List */}
-        <div className={`mt-[4rem] h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar ${close ? "opacity-0 invisible" : "opacity-100 visible"} transition-opacity duration-300 ease-in-out`}>
+        <div className={`mt-[2rem] h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar ${close ? "opacity-0 invisible" : "opacity-100 visible"} transition-opacity duration-300 ease-in-out`}>
           {isClient && (filteredData.length ? filteredData : data).map((user, index) => {
             // Create a conversation if one doesn't exist
             const createConversation = async () => {
