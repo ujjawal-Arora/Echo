@@ -4,6 +4,7 @@ import uploadFile from "../Helper/upload";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
+import {config} from "../config";
 
 interface UserDetailsResponse {
   success: boolean;
@@ -125,7 +126,7 @@ const UserDetailsPage = () => {
       console.log("Sending user details:", userDetails);
 
       const response = await axios.post<UserDetailsResponse>(
-        "http://localhost:5173/api/userdetails",
+        `${config.apiBaseUrl}/userdetails`,
         userDetails
       );
 

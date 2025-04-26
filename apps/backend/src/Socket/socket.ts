@@ -2,8 +2,10 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import axios from "axios";
 import { config } from '../config';
+import { PrismaClient } from '@prisma/client';
 
 const appusers = new Map<string, string>();
+const client = new PrismaClient();
 
 interface UserResponse {
     success: boolean;
@@ -80,19 +82,38 @@ export const initializeSocket = (server: any) => {
             try {
                 console.log("Received new message:", { conversationId, senderId, body, socketId, recieverId });
                 
-                const response: any = await axios.post(`${config.baseUrl}/api/addconvp`, {
-                    conversationId,
-                    senderId,
-                    body,
+                // First verify the conversation exists
+                const conversation = await client.conversation.findUnique({
+                    where: { id: conversationId },
                 });
-
-                console.log("Message added to database:", response.data);
                 
-                if (!response.data || !response.data.message) {
-                    console.error("Invalid response from database:", response.data);
-                    socket.emit("error", { message: "Failed to save message to database" });
+                if (!conversation) {
+                    console.error("Conversation not found:", conversationId);
+                    socket.emit("error", { message: "Conversation not found" });
                     return;
                 }
+
+                // Then verify the sender exists
+                const userExists = await client.user.findUnique({
+                    where: { id: senderId },
+                });
+                
+                if (!userExists) {
+                    console.error("User not found:", senderId);
+                    socket.emit("error", { message: "Invalid sender" });
+                    return;
+                }
+
+                // Create the message directly using Prisma client
+                const message = await client.message.create({
+                    data: {
+                        conversationId,
+                        senderId,
+                        body,
+                    },
+                });
+
+                console.log("Message created successfully:", message);
                 
                 const recipientSocketId = appusers.get(recieverId);
                 console.log("Recipient socket ID:", recipientSocketId);
@@ -101,9 +122,9 @@ export const initializeSocket = (server: any) => {
                     conversationId,
                     senderId,
                     body,
-                    createdAt,
-                    updatedAt: response.data.message.updatedAt,
-                    id: response.data.message.id,
+                    createdAt: message.createdAt,
+                    updatedAt: message.updatedAt,
+                    id: message.id,
                 };
 
                 // Emit to recipient if they're connected
@@ -115,21 +136,17 @@ export const initializeSocket = (server: any) => {
                 }
 
                 // Emit back to sender to confirm message was sent
-                // Only emit to the sender if they're not the recipient (to avoid duplicates)
                 if (socketId !== recipientSocketId) {
                     io.to(socketId).emit("receive-Message", messageData);
                     console.log(`Message confirmation sent to sender: ${senderId} at socket: ${socketId}`);
-                } else {
-                    console.log(`Sender and recipient are the same, not sending duplicate message`);
                 }
                 
                 // Also emit to all sockets in the conversation room
-                // This ensures that if a user has multiple tabs open, they all receive the message
                 io.to(`conversation:${conversationId}`).emit("receive-Message", messageData);
                 console.log(`Message broadcast to conversation room: conversation:${conversationId}`);
             } catch (error) {
-                console.error("Error adding conversation:", error);
-                socket.emit("error", { message: "Failed to add conversation" });
+                console.error("Error saving message:", error);
+                socket.emit("error", { message: "Failed to save message" });
             }
         });
 

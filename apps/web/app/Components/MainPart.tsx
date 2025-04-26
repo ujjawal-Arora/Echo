@@ -23,7 +23,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     const [messages, setMessages] = useState<any[]>([]);
     const [pendingMessages, setPendingMessages] = useState<{[key: string]: any[]}>({});
     const state = useSelector((state) => state.Chat);
-    const [sendMessage, setsendMessage] = useState<string>();
+    const [sendMessage, setsendMessage] = useState<string>("");
     const dispatch = useDispatch();
     const dark = useSelector((state) => state.Theme);
     const [menuVisible, setMenuVisible] = useState(false);
@@ -32,47 +32,39 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     const messageContainerRef = useRef<HTMLDivElement>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
-
-    // Only clear chat state when explicitly logging out, not on every mount
-    // This useEffect is now commented out to prevent clearing on refresh
-    /*
-    useEffect(() => {
-        dispatch(clearChatState());
-        setMessages([]);
-        setPendingMessages({});
-    }, [dispatch]);
-    */
+    const [isLoading, setIsLoading] = useState(true);
 
     // Set isClient to true when component mounts (client-side only)
     useEffect(() => {
         setIsClient(true);
+        setIsLoading(false);
     }, []);
 
     // Get userId from localStorage only on the client side
     useEffect(() => {
-        if (typeof window !== 'undefined') {
+        if (isClient && typeof window !== 'undefined') {
             const storedUserId = localStorage.getItem("userId");
             setUserId(storedUserId);
         }
-    }, []);
+    }, [isClient]);
 
-    // useEffects here
+    // Socket connection effect
     useEffect(() => {
-        if (typeof window !== 'undefined') {
+        if (isClient && typeof window !== 'undefined') {
             const newsocket = io(config.apiBaseUrl.replace('/api', ''));
             setsocket(newsocket);
+
             newsocket.on("connect", () => {
                 const userId = localStorage.getItem("userId");
                 if (!userId) {
                     console.error("User ID not found in localStorage");
                     return;
                 }
-                newsocket.emit("connectUser", { userId: userId, socketId: newsocket.id })
+                newsocket.emit("connectUser", { userId: userId, socketId: newsocket.id });
                 console.log("Connected:", newsocket.id);
                 setOnline(true);
             });
 
-            // Add a listener for connection errors
             newsocket.on("connect_error", (error) => {
                 console.error("Socket connection error:", error);
             });
@@ -82,37 +74,77 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                 setOnline(false);
             };
         }
-    }, []);
+    }, [isClient]);
 
+    // Load messages from Redux state or fetch from API
     useEffect(() => {
-        if (state && state.messages) {
+        if (isClient && state && state.messages) {
             console.log("Loading messages from Redux state:", state.messages);
             setMessages(state.messages);
             
-            // Check if there are any pending messages for this conversation
             if (state.conversationId && pendingMessages[state.conversationId]) {
-                console.log("Found pending messages for this conversation:", pendingMessages[state.conversationId]);
-                
-                // Merge pending messages with current messages, avoiding duplicates
                 const currentMessageIds = new Set(state.messages.map((msg: any) => msg.id));
                 const newPendingMessages = pendingMessages[state.conversationId]?.filter(
                     (msg: any) => !currentMessageIds.has(msg.id)
                 ) || [];
                 
                 if (newPendingMessages.length > 0) {
-                    console.log("Adding pending messages to current conversation:", newPendingMessages);
                     setMessages(prev => [...prev, ...newPendingMessages]);
                 }
             }
-        } else {
+        } else if (isClient && state && state.conversationId) {
             console.log("No messages in Redux state, fetching from API");
-            // If no messages in Redux state, fetch them from the API
-            if (state && state.conversationId) {
-                fetchMessages(state.conversationId);
-            }
+            fetchMessages(state.conversationId);
         }
-    }, [state, pendingMessages]);
+    }, [state, pendingMessages, isClient]);
 
+    // Socket message handling
+    useEffect(() => {
+        if (!socket || !isClient) return;
+
+        const handleReceiveMessage = (message: any) => {
+            console.log("Received message:", message);
+            
+            setPendingMessages(prev => {
+                const conversationId = message.conversationId;
+                const existingMessages = prev[conversationId] || [];
+                
+                if (existingMessages.some(msg => msg.id === message.id)) {
+                    return prev;
+                }
+                
+                return {
+                    ...prev,
+                    [conversationId]: [...existingMessages, message]
+                };
+            });
+            
+            if (state?.conversationId === message.conversationId) {
+                setMessages(prev => {
+                    if (prev.some(msg => msg.id === message.id)) {
+                        return prev;
+                    }
+                    return [...prev, message];
+                });
+            }
+        };
+
+        const handleRevisedMessage = (message: any) => {
+            if (state?.conversationId === message.conversationId) {
+                setMessages(prev => prev.filter(msg => msg.id !== message.id));
+            }
+        };
+
+        socket.on('receive-Message', handleReceiveMessage);
+        socket.on('revised-Message', handleRevisedMessage);
+
+        return () => {
+            socket.off('receive-Message', handleReceiveMessage);
+            socket.off('revised-Message', handleRevisedMessage);
+        };
+    }, [socket, state?.conversationId, isClient]);
+
+    // Add fetchMessages function
     const fetchMessages = async (conversationId: string) => {
         try {
             const response = await axios.get(`${config.apiBaseUrl}/getmessages/${conversationId}`);
@@ -129,83 +161,22 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
         }
     };
 
+    // Join conversation room
     useEffect(() => {
-        const handleReceiveMessage = (message: any) => {
-            console.log("Received message:", message);
-            
-            // Store the message in pendingMessages for this conversation
-            setPendingMessages(prev => {
-                const conversationId = message.conversationId;
-                const existingMessages = prev[conversationId] || [];
-                
-                // Check if this message is already in the pending messages
-                const messageExists = existingMessages.some(msg => msg.id === message.id);
-                if (messageExists) {
-                    console.log("Message already exists in pending messages, not adding duplicate");
-                    return prev;
-                }
-                
-                console.log("Adding new message to pending messages for conversation:", conversationId);
-                return {
-                    ...prev,
-                    [conversationId]: [...existingMessages, message]
-                };
-            });
-            
-            // If this message is for the currently selected conversation, add it to the messages state
-            if (state && state.conversationId && message.conversationId === state.conversationId) {
-                // Check if the message already exists in the state to prevent duplicates
-                setMessages((prevMessages) => {
-                    // Check if this message is already in the state
-                    const messageExists = prevMessages.some(msg => msg.id === message.id);
-                    if (messageExists) {
-                        console.log("Message already exists in state, not adding duplicate");
-                        return prevMessages;
-                    }
-                    console.log("Adding new message to state");
-                    return [...prevMessages, message];
-                });
-            } else {
-                console.log("Message received for a different conversation:", message.conversationId);
-            }
-        };
-        const handleRevisedMessage = (message: any) => {
-            console.log("Revised message:", message);
-            if (state && state.conversationId && message.conversationId === state.conversationId) {
-                setMessages(prevMessages => prevMessages.filter(msg => msg.id !== message.id));
-            }
-        }
-        if (socket) {
-            console.log("Socket is connected, listening for messages");
-            socket.on('receive-Message', handleReceiveMessage);
-            socket.on('revised-Message', handleRevisedMessage);
+        if (state?.conversationId && socket && isClient) {
+            socket.emit("join-conversation", { conversationId: state.conversationId });
             return () => {
-                console.log("Cleaning up socket listener");
-                socket.off('receive-Message', handleReceiveMessage);
-                socket.off('revised-Message', handleRevisedMessage);
+                socket.emit("leave-conversation", { conversationId: state.conversationId });
             };
         }
-    }, [socket, state]);
+    }, [state?.conversationId, socket, isClient]);
 
-    useEffect(() => {
-        if (state && state.conversationId) {
-            console.log("Joining conversation room:", state.conversationId);
-            socket?.emit("join-conversation", { conversationId: state.conversationId });
-            
-            return () => {
-                console.log("Leaving conversation room:", state.conversationId);
-                socket?.emit("leave-conversation", { conversationId: state.conversationId });
-            };
-        }
-    }, [state?.conversationId, socket]);
-
+    // Scroll to bottom when messages change
     useEffect(() => {
         if (messageContainerRef.current) {
             messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
         }
     }, [messages]);
-    // functions Here
-   
 
     function formatISOToTime(isoString: string) {
         const date = new Date(isoString);
@@ -236,6 +207,7 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
             }
             
             const newMessage = {
+                id: Date.now().toString(), // Temporary ID
                 conversationId: state.conversationId,
                 senderId: userId,
                 body: sendMessage,
@@ -250,17 +222,18 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                 return;
             }
             
+            // Add message to local state immediately
+            setMessages(prev => [...prev, newMessage]);
+            
+            // Clear the input field
+            setsendMessage("");
+            
+            // Send through socket
             socket.emit("new-message", { 
                 ...newMessage, 
                 socketId: socket.id, 
                 recieverId: state.userId 
             });
-            
-            // Clear the input field immediately for better UX
-            setsendMessage("");
-            
-            // Don't add the message to state here - wait for the socket confirmation
-            // This prevents duplicate messages
         }
     }
     function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -295,54 +268,64 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     }
     return (
         <div className={`transition-all duration-300 ease-in-out ${dark ? "dark bg-[#121212]" : "light"} ${close ? "w-[100%]" : "w-[70%]"} font-mono relative min-h-screen`}>
-
-            <div className="flex bg-gray-100 p-4 justify-between border-b-2 dark:border-gray-800 dark:bg-[#121212]">
-                <div className=" flex gap-4 ">
-                    <Avator name={state?.name} width={48} height={48} keys={state?.keys} isrequired={false} imageUrl={null} />
-                    <div className="flex flex-col justify-center">
-                        <h1 className="font-bold text-lg dark:text-white">{state?.name}</h1>
-                        <div className="flex gap-1">
+            {isLoading ? (
+                <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#DB1A5A]"></div>
+                </div>
+            ) : (
+                <>
+                    {/* Header */}
+                    <div className="flex justify-between p-4 border-b-2 dark:border-gray-800">
+                        <div className="flex gap-4">
+                            <Avator name={state?.name} width={48} height={48} keys={state?.keys} isrequired={false} imageUrl={null} />
                             <div className="flex flex-col justify-center">
-                                <h2 className="h-2 w-2 bg-[#DB1A5A] rounded-full"></h2>
+                                <h1 className="font-bold text-lg dark:text-white">{state?.name}</h1>
+                                <div className="flex gap-1">
+                                    <div className="flex flex-col justify-center">
+                                        <h2 className="h-2 w-2 bg-[#DB1A5A] rounded-full"></h2>
+                                    </div>
+                                    <h1 className="text-slate-600 text-sm dark:text-white">Active</h1>
+                                </div>
                             </div>
-                            <h1 className="text-slate-600 text-sm dark:text-white">Active</h1>
+                        </div>
+                        
+                        <div className="flex rounded-lg h-fit gap-1">
+                            <div className="bg-gray-200 pl-5 pr-5 p-3 rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer transition-all duration-500 ease-in-out" onClick={handleDarkToggle}>
+                                {dark ? <MdSunny className="text-lg text-[#DB1A5A] cursor-pointer" /> : <IoMdMoon className="text-lg text-[#DB1A5A] cursor-pointer" />}
+                            </div>
+                            <div className={`relative transition-all duration-300 ease-in-out ${showsearch ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                            </div>
+                            <div className="bg-gray-200 pl-5 pr-5 p-3 rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer" onClick={() => setshowsearch(state?.conversationId)}>
+                                <FaSearch className="text-lg text-[#DB1A5A] cursor-pointer" />
+                            </div>
+                            <div className="bg-gray-200 pr-5 pl-5 p-3 rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer">
+                                <IoSettingsSharp className="text-lg text-[#DB1A5A] cursor-pointer" />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="flex flex-col justify-center">
-                    <div className="flex rounded-lg h-fit gap-1">
-                        <div className="bg-gray-200 pl-5 pr-5 p-3  rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer  transition-all duration-500 ease-in-out" onClick={handleDarkToggle}>
-                            {dark ? <MdSunny className="text-lg text-[#DB1A5A] cursor-pointer " /> :
-                                <IoMdMoon className="text-lg text-[#DB1A5A] cursor-pointer " />}
-                        </div>
-                        <div className={`relative transition-all duration-300 ease-in-out ${showsearch ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-                        </div>
-                        <div className="bg-gray-200 pl-5 pr-5 p-3  rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer " onClick={() => {
-                            setshowsearch(state.conversationId)
-                        }} ><FaSearch className="text-lg text-[#DB1A5A] cursor-pointer" /></div>
-                        <div className="bg-gray-200 pr-5 pl-5 p-3 rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer"><IoSettingsSharp className="text-lg text-[#DB1A5A] cursor-pointer" /></div>
-                    </div>
-                </div>
-            </div>
-            {/* chatting area */}
 
-            <div ref={messageContainerRef} className="flex flex-col h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
-                {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full">
-                        <div className="text-4xl mb-4">👋</div>
-                        <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">Start a Conversation</h2>
-                        <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
-                            Send a message to begin chatting with {state?.name || 'your match'}
-                        </p>
-                    </div>
-                ) : (
-                    messages?.map((d: any) => {
-                        return (
-                            d.id == '1' ? <div className="flex text-[#DB1A5A] font-bold text-sm justify-center mt-4 text-center">
-                                <div className="flex dark:bg-[#212121] flex-col pt-2 pb-3 bg-gray-200 pl-2 rounded-l-xl text-base"><IoMdLock /></div>
-                                <h1 className="w-[34%] dark:bg-[#212121] pr-2 pb-2 pt-2 rounded-r-xl bg-gray-200 flex">{d.body}</h1>
-                            </div> :
-                                d.senderId != userId ?
+                    {/* Chat Area */}
+                    <div ref={messageContainerRef} className="flex flex-col h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
+                        {messages.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full">
+                                <div className="text-4xl mb-4">👋</div>
+                                <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-300 mb-2">Start a Conversation</h2>
+                                <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+                                    Send a message to begin chatting with {state?.name || 'your match'}
+                                </p>
+                            </div>
+                        ) : (
+                            messages.map((d) => (
+                                d.id === '1' ? (
+                                    <div key={d.id} className="flex text-[#DB1A5A] font-bold text-sm justify-center mt-4 text-center">
+                                        <div className="flex dark:bg-[#212121] flex-col pt-2 pb-3 bg-gray-200 pl-2 rounded-l-xl text-base">
+                                            <IoMdLock />
+                                        </div>
+                                        <h1 className="w-[34%] dark:bg-[#212121] pr-2 pb-2 pt-2 rounded-r-xl bg-gray-200 flex">
+                                            {d.body}
+                                        </h1>
+                                    </div>
+                                ) : d.senderId !== userId ? (
                                     <div key={d.id} className="flex m-6" onContextMenu={handleContextMenu}>
                                         {isClient && <RightClick
                                             x={menuPosition.x}
@@ -352,37 +335,46 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                                         <div className="text-md dark:bg-neutral-700 bg-gray-300 text-black dark:text-white min-w-32 h-fit max-w-[40%] w-fit p-2 pl-4 pr-4 rounded-2xl rounded-bl-none">
                                             <h1 className="break-words">{d.body}</h1>
                                             <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
-
                                         </div>
-
-                                    </div> : <div className="flex justify-end m-6" key={d.id}>
+                                    </div>
+                                ) : (
+                                    <div className="flex justify-end m-6" key={d.id}>
                                         <div className="text-md bg-[#DB1A5A] max-w-[40%] p-2 pl-4 pr-4 rounded-2xl rounded-br-none min-w-32 text-white">
                                             <h1 className="break-words">{d.body}</h1>
                                             <h1 className="flex justify-end text-xs mt-1">{formatISOToTime(d.createdAt)}</h1>
                                         </div>
                                     </div>
-                        );
-                    })
-                )}
-            </div>
-
-            {/* Message  send */}
-
-            {state && <div className="absolute bottom-0 w-full ">
-                <div className="flex bg-gray-100 p-3 gap-4 dark:bg-[#121212] border-t-2 dark:border-gray-800 border-gray-200">
-                    <div className="flex flex-col justify-center">
-                        <BsEmojiHeartEyesFill className="text-[#DB1A5A] text-2xl" />
+                                )
+                            ))
+                        )}
                     </div>
-                    <input type="text" value={sendMessage} placeholder="Type a message..." className="w-full h-10 p-2 rounded-lg  outline-none dark:text-white dark:placeholder:text-white bg-transparent text-black placeholder:text-black placeholder:font-bold font-semibold" onKeyDown={handleKeyDown}
-                        onChange={(e) => {
-                            setsendMessage(e.target.value);
-                        }} />
-                    <div className="flex flex-col justify-center mr-2" >
-                        <IoMdSend className="text-[#ec306f] hover:text-[#DB1A5A] text-3xl cursor-pointer" onClick={handleSubmit} />
-                    </div>
-                </div>
-            </div>
-            }
+
+                    {/* Message Input */}
+                    {isClient && state && (
+                        <div className="absolute bottom-0 w-full">
+                            <div className="flex bg-gray-100 p-3 gap-4 dark:bg-[#121212] border-t-2 dark:border-gray-800 border-gray-200">
+                                <div className="flex flex-col justify-center">
+                                    <BsEmojiHeartEyesFill className="text-[#DB1A5A] text-2xl" />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={sendMessage}
+                                    placeholder="Type a message..."
+                                    className="w-full h-10 p-2 rounded-lg outline-none dark:text-white dark:placeholder:text-white bg-transparent text-black placeholder:text-black placeholder:font-bold font-semibold"
+                                    onKeyDown={handleKeyDown}
+                                    onChange={(e) => setsendMessage(e.target.value)}
+                                />
+                                <div className="flex flex-col justify-center mr-2">
+                                    <IoMdSend
+                                        className="text-[#ec306f] hover:text-[#DB1A5A] text-3xl cursor-pointer"
+                                        onClick={handleSubmit}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
-    )
+    );
 } 
