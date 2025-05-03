@@ -3,11 +3,11 @@ import { TiTick } from "react-icons/ti";
 import { IoClose } from "react-icons/io5";
 export default function SecondPage() {
     return (
-        <div>
+        <div className="bg-zinc-950">
             <h1 className="text-[#DB1A5A] text-4xl flex justify-center mt-10 font-bold">Start Connecting with Just a Swipe!</h1>
             <p className="text-white mt-2 flex justify-center">Want to meet someone new? Simply swipe right to send a connection request. </p>
             <p className="text-white mt-2 flex justify-center">If they swipe right too, the conversation begins—safe, simple, and secure!</p>
-            <div className="flex min-h-screen  justify-center items-center space-x-6 relative">
+            <div className="flex min-h-screen justify-center items-center space-x-6 relative">
                 <div className="w-[70%] flex justify-center mt-10 gap-10">
                     <div className="border-4 border-[#DB1A5A] rounded-2xl w-fit">
                         <img src="/FrontPage3.png" className="rounded-3xl p-2" />

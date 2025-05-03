@@ -4,7 +4,7 @@ import { BsHearts } from "react-icons/bs";
 
 export default function ThirdPage() {
     return (
-        <div className="bg-zinc-900 flex tracking-wide min-h-[100vh] relative overflow-hidden">
+        <div className=" flex tracking-wide min-h-[100vh] relative overflow-hidden">
 <div className="w-[100%] m-14">
     <h1 className="text-[#DB1A5A] flex justify-center font-bold text-4xl">Your Match, Your Conversation – Let’s Talk!</h1>
     <div className="flex justify-center">

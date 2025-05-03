@@ -12,17 +12,24 @@ import { clearChatState } from '@repo/redux';
 
 export default function Landing() {
     return (
-        <div className="min-h-screen bg-zinc-900">
+        <div className="min-h-screen bg-[#09090b]">
             <Toaster position="top-center" />
             <TopBar />
             <section>
                 <FirstPage />
             </section>
             <section>
+                <div className="bg-gradient-to-b from-[#DB1A5A]/20 to-zinc-950">
                 <SecondPage />
+
+                </div>
             </section>
             <section>3
+                
+            <div className="bg-gradient-to-b from-[#09090b] to-[#DB1A5A]/20">
+
                 <ThirdPage />
+                </div>
             </section>
             <section>
                 <Footer />
@@ -69,17 +76,45 @@ function TopBar() {
         router.push('/chat');
     };
 
+    const handleExploreClick = () => {
+        if (!isLoggedIn) {
+            toast.error('Please login first to explore!');
+            router.push('/signin');
+            return;
+        }
+        router.push('/explore');
+    };
+
+    const handleAboutClick = () => {
+        if (!isLoggedIn) {
+            toast.error('Please login first to view about page!');
+            router.push('/signin');
+            return;
+        }
+        router.push('/about');
+    };
+
     return (
-        <div className="flex bg-zinc-900 shadow-xl border-b border-pink-500/30 text-white justify-between p-2">
+        <div className="flex bg-[#121214] shadow-[0_4px_6px_-1px_rgba(255,255,255,0.3)] border-b border-pink-500/30 text-white justify-between p-2">
             <div className="flex flex-col justify-center">
                 <img src="/Logo.png" className="flex w-50 h-10" />
             </div>
             <div className="flex flex-col justify-center">
                 <div className="flex gap-8 font-bold text-lg text-gray-100">
                     <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">HOME</h1>
-                    <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">ABOUT</h1>
+                    <h1 
+                        className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer"
+                        onClick={handleAboutClick}
+                    >
+                        ABOUT
+                    </h1>
                     <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">PRICING</h1>
-                    <h1 className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer">EXPLORE</h1>
+                    <h1 
+                        className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer"
+                        onClick={handleExploreClick}
+                    >
+                        EXPLORE
+                    </h1>
                     <h1 
                         className="hover:text-[#DB1A5A] hover:underline underline-offset-8 cursor-pointer"
                         onClick={handleChatClick}

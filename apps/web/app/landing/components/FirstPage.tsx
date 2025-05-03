@@ -7,7 +7,9 @@ import { useRouter } from 'next/navigation';
 export default function FirstPage() {
     const router = useRouter();
     return (
-        <div className="bg-zinc-900 flex tracking-wide min-h-[90vh]">
+        <div className="bg-zinc-900  flex tracking-wide min-h-[90vh] bg-gradient-to-b from-[#DB1A5A]/20 to-zinc-950">
+                        {/* <div className="absolute inset-0 bg-gradient-to-b from-[#DB1A5A]/20 to-zinc-950" /> */}
+
             <div className='text-white z-40 w-[66%] mt-20'>
                 <h1 className='text-5xl flex justify-start mt-16 ml-16 mr-16 font-bold text-[#DB1A5A]'>Real People. Real Connections. Real Love.</h1>
                 <h2 className='flex ml-16 mr-20 mt-4 text-xl'>Join today and take the first step toward finding someone who shares your passions and values. Love might be closer than you think—start your journey now!</h2>
