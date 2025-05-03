@@ -5,6 +5,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
 import {config} from "../config";
+import ProtectedRoute from '../Components/ProtectedRoute';
 
 interface UserDetailsResponse {
   success: boolean;
@@ -339,4 +340,10 @@ const UserDetailsPage = () => {
   );
 };
 
-export default UserDetailsPage;
+export default function ProtectedUserDetailsPage() {
+  return (
+    <ProtectedRoute>
+      <UserDetailsPage />
+    </ProtectedRoute>
+  );
+}

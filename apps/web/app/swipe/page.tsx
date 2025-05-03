@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Card from "./Card";
 import { config } from '../config';
+import ProtectedRoute from '../Components/ProtectedRoute';
 
 interface CardData {
   id: number;
@@ -108,4 +109,10 @@ function SwipeCards() {
   );
 }
 
-export default SwipeCards;
+export default function SwipePage() {
+  return (
+    <ProtectedRoute>
+      <SwipeCards />
+    </ProtectedRoute>
+  );
+}
