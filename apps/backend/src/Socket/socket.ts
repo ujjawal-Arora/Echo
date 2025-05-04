@@ -5,6 +5,7 @@ import { config } from '../config';
 import { PrismaClient } from '@prisma/client';
 
 const appusers = new Map<string, string>();
+const onlineUsers = new Set<string>();
 const client = new PrismaClient();
 
 interface UserResponse {
@@ -27,7 +28,10 @@ export const initializeSocket = (server: any) => {
 
         socket.on("connectUser", (data) => {
             appusers.set(data.userId, data.socketId);
-            console.log("Current appusers:", appusers);
+            onlineUsers.add(data.userId);
+            // Broadcast to all clients that this user is now online
+            io.emit("user-status-change", { userId: data.userId, isOnline: true });
+            console.log("Current online users:", Array.from(onlineUsers));
         });
 
         socket.on("join-conversation", (data) => {
@@ -224,6 +228,9 @@ export const initializeSocket = (server: any) => {
             for (const [userId, id] of appusers.entries()) {
                 if (id === socket.id) {
                     appusers.delete(userId);
+                    onlineUsers.delete(userId);
+                    // Broadcast to all clients that this user is now offline
+                    io.emit("user-status-change", { userId, isOnline: false });
                     console.log(`User ${userId} disconnected`);
                     break;
                 }

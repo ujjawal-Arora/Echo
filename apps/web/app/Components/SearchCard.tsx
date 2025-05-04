@@ -22,7 +22,6 @@ function SearchCard({
   name,
   message,
   date,
-  count,
   keys,
   conversationId,
   userId,
@@ -31,7 +30,6 @@ function SearchCard({
   name: string;
   message: string;
   date: ReactNode;
-  count: number;
   keys: number;
   conversationId: string | undefined;
   userId: string;
@@ -112,17 +110,6 @@ function SearchCard({
           </div>
           <div className="flex flex-col items-end text-gray-500 text-xs dark:text-gray-200">
             <span>{date}</span>
-            <div
-              className={`text-white bg-[#DB1A5A] rounded-full flex mt-2 justify-center items-center ${
-                count <= 9
-                  ? "pr-[0.5rem] pl-[0.5rem] p-[0.1rem]"
-                  : count <= 99
-                  ? "pr-[0.3rem] pl-[0.3rem] p-[0.2rem]"
-                  : "pr-[0.3rem] pl-[0.3rem] p-[0.1rem]"
-              }`}
-            >
-              <h1 className="rounded-full">{count <= 99 ? count : "99+"}</h1>
-            </div>
           </div>
         </div>
       </div>

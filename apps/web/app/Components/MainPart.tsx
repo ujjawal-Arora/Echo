@@ -19,7 +19,7 @@ import { config } from '../config';
 // Dynamically import RightClick with no SSR
 const RightClick = dynamic(() => import('./ChatRightClickContext'), { ssr: false });
 
-export default function MainPart({ close, setshowsearch, showsearch, setOnline }: { close: boolean, setshowsearch: Dispatch<SetStateAction<string | null>>, showsearch: string|null, setOnline: Dispatch<SetStateAction<boolean>> }) {
+export default function MainPart({ close, setshowsearch, showsearch }: { close: boolean, setshowsearch: Dispatch<SetStateAction<string | null>>, showsearch: string|null }) {
     const [messages, setMessages] = useState<any[]>([]);
     const [pendingMessages, setPendingMessages] = useState<{[key: string]: any[]}>({});
     const state = useSelector((state) => state.Chat);
@@ -33,6 +33,19 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     const [userId, setUserId] = useState<string | null>(null);
     const [isClient, setIsClient] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Set dark mode as default and handle theme persistence
+    useEffect(() => {
+        if (isClient && typeof window !== 'undefined') {
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme === 'light') {
+                dispatch(removedark());
+            } else {
+                dispatch(addDark());
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+    }, [isClient, dispatch]);
 
     // Set isClient to true when component mounts (client-side only)
     useEffect(() => {
@@ -62,7 +75,6 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                 }
                 newsocket.emit("connectUser", { userId: userId, socketId: newsocket.id });
                 console.log("Connected:", newsocket.id);
-                setOnline(true);
             });
 
             newsocket.on("connect_error", (error) => {
@@ -71,7 +83,6 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
 
             return () => {
                 newsocket.disconnect();
-                setOnline(false);
             };
         }
     }, [isClient]);
@@ -246,8 +257,10 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
     function handleDarkToggle() {
         if (dark) {
             dispatch(removedark());
+            localStorage.setItem('theme', 'light');
         } else {
             dispatch(addDark());
+            localStorage.setItem('theme', 'dark');
         }
     }
     const handleContextMenu = (event: any) => {
@@ -277,26 +290,22 @@ export default function MainPart({ close, setshowsearch, showsearch, setOnline }
                     {/* Header */}
                     <div className="flex justify-between p-4 border-b-2 dark:border-gray-800">
                         <div className="flex gap-4">
-                            <Avator name={state?.name} width={48} height={48} keys={state?.keys} isrequired={false} imageUrl={null} />
+                            <Avator 
+                                name={state?.name} 
+                                width={48} 
+                                height={48} 
+                                keys={state?.keys} 
+                                isrequired={true} 
+                                imageUrl={null} 
+                            />
                             <div className="flex flex-col justify-center">
                                 <h1 className="font-bold text-lg dark:text-white">{state?.name}</h1>
-                                <div className="flex gap-1">
-                                    <div className="flex flex-col justify-center">
-                                        <h2 className="h-2 w-2 bg-[#DB1A5A] rounded-full"></h2>
-                                    </div>
-                                    <h1 className="text-slate-600 text-sm dark:text-white">Active</h1>
-                                </div>
                             </div>
                         </div>
                         
                         <div className="flex rounded-lg h-fit gap-1">
                             <div className="bg-gray-200 pl-5 pr-5 p-3 rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer transition-all duration-500 ease-in-out" onClick={handleDarkToggle}>
                                 {dark ? <MdSunny className="text-lg text-[#DB1A5A] cursor-pointer" /> : <IoMdMoon className="text-lg text-[#DB1A5A] cursor-pointer" />}
-                            </div>
-                            <div className={`relative transition-all duration-300 ease-in-out ${showsearch ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-                            </div>
-                            <div className="bg-gray-200 pl-5 pr-5 p-3 rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer" onClick={() => setshowsearch(state?.conversationId)}>
-                                <FaSearch className="text-lg text-[#DB1A5A] cursor-pointer" />
                             </div>
                             <div className="bg-gray-200 pr-5 pl-5 p-3 rounded-lg hover:bg-gray-300 border-2 dark:bg-[#121212] dark:border-[#DB1A5A] dark:hover:bg-[#212121] cursor-pointer">
                                 <IoSettingsSharp className="text-lg text-[#DB1A5A] cursor-pointer" />

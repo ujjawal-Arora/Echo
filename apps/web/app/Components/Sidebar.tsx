@@ -30,7 +30,6 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
   const [data, setData] = useState<Conversation[]>([]);
   const [filteredData, setFilteredData] = useState<Conversation[]>([]);
-  const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
   const [socket, setSocket] = useState<Socket | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string>("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -90,29 +89,6 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
       console.log("Sidebar connected to socket:", newSocket.id);
     });
     
-    // Listen for new messages
-    newSocket.on("receive-Message", (message: any) => {
-      console.log("Received message in sidebar:", message);
-      if (message && message.conversationId) {
-        // Increment unread count for this conversation
-        setUnreadCounts(prev => ({
-          ...prev,
-          [message.conversationId]: (prev[message.conversationId] || 0) + 1
-        }));
-      }
-    });
-    
-    // Listen for reset unread count event
-    newSocket.on("reset-unread-count", (data: any) => {
-      console.log("Resetting unread count for conversation:", data.conversationId);
-      if (data && data.conversationId) {
-        setUnreadCounts(prev => ({
-          ...prev,
-          [data.conversationId]: 0
-        }));
-      }
-    });
-    
     // Listen for right-swipe notifications
     newSocket.on('right-swipe-notification', (notification: Notification) => {
       setNotifications(prev => [...prev, notification]);
@@ -159,53 +135,6 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
     setNotifications(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleLinkUsers = async () => {
-    try {
-      const userId = localStorage.getItem('userId');
-      if (!userId) {
-        console.warn("User ID not found in localStorage.");
-        return;
-      }
-      
-      // Check if we already have a conversation with this user
-      const existingConversation = data.find(u => 
-        u.id === userId && u.conversationIds && u.conversationIds.length > 0
-      );
-      
-      if (existingConversation) {
-        console.log("Conversation already exists for:", userId);
-        return;
-      }
-      
-      console.log("Creating conversation for:", userId);
-      const response = await axios.post(`${config.apiBaseUrl}/linkusers`, {
-        userId1: userId,
-        userId2: userId
-      });
-      
-      console.log("Created conversation:", response.data);
-      
-      // Refresh the conversations list
-      const updatedResponse = await axios.get<Conversation[]>(`${config.apiBaseUrl}/get-accepted/${userId}`);
-      setData(updatedResponse.data);
-      setFilteredData(updatedResponse.data);
-    } catch (error) {
-      console.error("Error creating conversation:", error);
-    }
-  };
-
-  // Add search functionality
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredData(data);
-    } else {
-      const filtered = data.filter(user => 
-        user.username.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredData(filtered);
-    }
-  }, [searchQuery, data]);
-
   return (
     <>
       <div className={`bg-gray-100 dark:bg-[#121212] h-screen border-r-2 dark:border-gray-800 transition-all duration-300 ease-in-out ${close ? "w-0 opacity-0" : "w-[30%] opacity-100"}`}>
@@ -231,7 +160,7 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
         </div>
         
         {/* Notifications */}
-        {isClient && notifications.length > 0 && (
+        {notifications.length > 0 && (
           <div className="mb-4">
             <h3 className="text-lg font-semibold mb-2">Notifications</h3>
             {notifications.map((notification, index) => (
@@ -259,55 +188,13 @@ const Sidebar: React.FC<SidebarProps> = ({ close, setclose }) => {
         )}
 
         {/* User List */}
-        <div className={`mt-[2rem] h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar ${close ? "opacity-0 invisible" : "opacity-100 visible"} transition-opacity duration-300 ease-in-out`}>
+        <div className={`overflow-y-auto h-[calc(100vh-12rem)] ${close ? "hidden" : "block"}`}>
           {isClient && (filteredData.length ? filteredData : data).map((user, index) => {
-            // Create a conversation if one doesn't exist
-            const createConversation = async () => {
-              try {
-                const userId = localStorage.getItem('userId');
-                if (!userId) {
-                  console.warn("User ID not found in localStorage.");
-                  return;
-                }
-                
-                // Check if we already have a conversation with this user
-                const existingConversation = data.find(u => 
-                  u.id === user.id && u.conversationIds && u.conversationIds.length > 0
-                );
-                
-                if (existingConversation) {
-                  console.log("Conversation already exists for:", user.username);
-                  return;
-                }
-                
-                console.log("Creating conversation for:", user.username);
-                const response = await axios.post(`${config.apiBaseUrl}/linkusers`, {
-                  userId1: userId,
-                  userId2: user.id
-                });
-                
-                console.log("Created conversation:", response.data);
-                
-                // Refresh the conversations list
-                const updatedResponse = await axios.get<Conversation[]>(`${config.apiBaseUrl}/get-accepted/${userId}`);
-                setData(updatedResponse.data);
-                setFilteredData(updatedResponse.data);
-              } catch (error) {
-                console.error("Error creating conversation:", error);
-              }
-            };
-            
-            // If no conversation exists, create one
-            if (!user.conversationIds || user.conversationIds.length === 0) {
-              createConversation();
-            }
-            
             return (
               <SearchCard
                 key={user.id}
                 keys={index}
                 avatar={null}
-                count={user.conversationIds?.[0] ? (unreadCounts[user.conversationIds[0]] || 0) : 0}
                 message={"Start chatting!"}
                 name={user.username}
                 date={"Sep 15"}

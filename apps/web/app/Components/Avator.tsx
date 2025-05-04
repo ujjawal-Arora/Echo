@@ -1,13 +1,22 @@
 import { PiUserCircle } from "react-icons/pi";
 import Image from "next/image";
-const Avator = ({name, imageUrl, width, height, keys, isrequired}:{name:string,imageUrl:string|null,width:number,height:number,keys:number,isrequired:boolean}) => {
-  const isOnline = true;
+
+interface AvatarProps {
+  name: string;
+  imageUrl: string | null;
+  width: number;
+  height: number;
+  keys: number;
+  isrequired: boolean;
+  isOnline?: boolean;
+}
+
+const Avator = ({ name, imageUrl, width, height, keys, isrequired, isOnline = false }: AvatarProps) => {
   let avatarName = " "
   if (name) {
     const splitName = name?.split(" ")
 
     if (splitName.length > 1) {
-
       avatarName = splitName?.[0]?.[0] || " " + (splitName?.[1]?.[0] || " ");
     } else {
       avatarName = splitName?.[0]?.[0] || " ";
