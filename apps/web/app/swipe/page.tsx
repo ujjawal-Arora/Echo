@@ -4,6 +4,8 @@ import axios from "axios";
 import Card from "./Card";
 import { config } from '../config';
 import ProtectedRoute from '../Components/ProtectedRoute';
+import { useRouter } from 'next/navigation';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface CardData {
   id: number;
@@ -22,14 +24,29 @@ function SwipeCards() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  const router = useRouter();
 
   useEffect(() => {
+    // Check if user details are completed
+    const userDetailsCompleted = localStorage.getItem('userDetailsCompleted');
+    if (!userDetailsCompleted) {
+      toast.error('Please complete your user details first!', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#DB1A5A',
+          color: '#fff',
+        },
+      });
+      router.push('/userdetails');
+      return;
+    }
+
     const fetchUserData = async () => {
       try {
         const userId = localStorage.getItem("userId");
         if (!userId) {
-          setError("User ID not found. Please log in again.");
-          setLoading(false);
+          router.push('/signin');
           return;
         }
   
@@ -60,7 +77,7 @@ function SwipeCards() {
     };
   
     fetchUserData();
-  }, []);
+  }, [router]);
   
 
   const handleSwipe = (id: number) => {

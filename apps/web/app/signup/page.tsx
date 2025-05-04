@@ -39,6 +39,7 @@ const SignUp = () => {
         // Clear any existing chat state before setting new user data
         dispatch(clearChatState());
         localStorage.removeItem('chatState');
+        localStorage.removeItem('userDetailsCompleted');
         
         localStorage.setItem('token', token);
         localStorage.setItem('userId', userId);

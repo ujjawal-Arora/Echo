@@ -131,11 +131,13 @@ const UserDetailsPage = () => {
         userDetails
       );
 
-      if (response.data.success) {
+      if (response.status === 200) {
+        // Save flag in localStorage indicating user details are completed
+        localStorage.setItem('userDetailsCompleted', 'true');
         toast.success('User details saved successfully!', { id: loadingToast });
-        router.push("/landing");
+        router.push('/swipe');
       } else {
-        toast.error(response.data.message || 'Failed to save user details. Please try again.', { id: loadingToast });
+        toast.error('Failed to save user details. Please try again.', { id: loadingToast });
       }
     } catch (error: any) {
       console.error("Error submitting user details:", error);
