@@ -19,7 +19,17 @@ import { config } from '../config';
 // Dynamically import RightClick with no SSR
 const RightClick = dynamic(() => import('./ChatRightClickContext'), { ssr: false });
 
-export default function MainPart({ close, setshowsearch, showsearch }: { close: boolean, setshowsearch: Dispatch<SetStateAction<string | null>>, showsearch: string|null }) {
+export default function MainPart({ 
+    close, 
+    setshowsearch, 
+    showsearch,
+    setOnline 
+}: { 
+    close: boolean; 
+    setshowsearch: Dispatch<SetStateAction<string | null>>; 
+    showsearch: string | null;
+    setOnline: Dispatch<SetStateAction<boolean>>;
+}) {
     const [messages, setMessages] = useState<any[]>([]);
     const [pendingMessages, setPendingMessages] = useState<{[key: string]: any[]}>({});
     const state = useSelector((state) => state.Chat);
