@@ -77,21 +77,21 @@ function TopBar() {
     };
 
     const handleExploreClick = () => {
-        if (!isLoggedIn) {
-            toast.error('Please login first to explore!');
-            router.push('/signin');
-            return;
-        }
-        router.push('/explore');
+    //     if (!isLoggedIn) {
+    //         toast.error('Please login first to explore!');
+    //         router.push('/signin');
+    //         return;
+    //     }
+    //     // router.push('/explore');
     };
 
     const handleAboutClick = () => {
-        if (!isLoggedIn) {
-            toast.error('Please login first to view about page!');
-            router.push('/signin');
-            return;
-        }
-        router.push('/about');
+    //     if (!isLoggedIn) {
+    //         toast.error('Please login first to view about page!');
+    //         router.push('/signin');
+    //         return;
+    //     }
+    //     // router.push('/about');
     };
 
     return (
