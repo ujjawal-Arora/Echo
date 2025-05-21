@@ -112,7 +112,20 @@ function SwipeCards() {
   if (cards.length === 0) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-zinc-900">
-        <p className="text-white text-lg">No matches found. Check back later!</p>
+        <div className=" flex flex-col text-center">
+          <p className="text-white text-lg mb-4">No matches found. Check back later!</p>
+          <button 
+            onClick={() => router.push('/pricing')}
+            className="bg-[#DB1A5A] text-white px-6 py-3 rounded-xl font-bold hover:bg-pink-700 transition-colors duration-300"
+          >
+            Buy Premium for More Matches
+          </button>
+          <button 
+            onClick={() => router.push('/landing')}
+            className="bg-zinc-700 mt-5 text-white px-6 py-3 rounded-xl font-bold hover:bg-zinc-600 transition-colors duration-300"
+          >Go to Home
+          </button>
+        </div>
       </div>
     );
   }
